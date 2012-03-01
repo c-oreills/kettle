@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <title>{% block title %}Kettle{% endblock %}</title>
+    {% block head %}
+        <link rel="stylesheet" type="text/css" href ="{{ url_for('static', filename='style.css') }}" media="screen" />
+    {% endblock %}
+    </head>
+    <body>
+        <a href="/" style="text-decoration: none; color: #3399ff">
+            <div id="header">
+                <img src="{{ url_for('static', filename='kettle.gif') }}"/>
+                <h2 style="display: inline;">Kettle</h2>
+            </div>
+        </a>
+        <div id="flash">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <ul class=flashes>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+        </div>
+        <div id="content">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

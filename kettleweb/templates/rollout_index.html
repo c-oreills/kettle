@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table>
+    {% for rollout in rollouts %}
+    <tr>
+        <td>
+            <a href="{{ url_for('rollout_view', rollout_id=rollout.id) }}">Rollout {{ rollout.id }}</a>
+        </td>
+        <td>
+            {{ rollout.nice_status() }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

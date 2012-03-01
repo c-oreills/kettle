@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+    Rollouts
+    <ul>
+        <li>
+        <a href="{{ url_for('rollout_edit', rollout_id='new') }}">New</a>
+        </li>
+        {% if latest %}
+        <li>
+        Latest: <a href="{{ url_for('rollout_view', rollout_id='latest') }}">Rollout {{ latest.id }}</a> - {{ latest.nice_status() }}
+        </li>
+        {% endif %}
+        <li>
+        <a href="{{ url_for('rollout_index') }}">All</a>
+        </li>
+    </ul>
+{% endblock %}
+

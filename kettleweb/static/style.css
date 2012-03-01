@@ -1,0 +1,38 @@
+.step_done {
+    font-style: italic;
+    color: #448844;
+}
+
+.step_done > a {
+    color: #448844;
+}
+
+.step_now {
+    font-weight: bold;
+    color: #0000ff;
+}
+
+#header {
+    width: 800px;
+    margin-right: auto;
+    margin-left: auto;
+    padding: 10px 10px 20px 10px;
+}
+
+#content {
+    width: 800px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+#flash {
+    width: 800px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.abort {
+    color: #ff0000;
+    font-size: x-large;
+    font-weight: bold;
+}

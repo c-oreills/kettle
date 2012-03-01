@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_fields %}
+
+{% block content %}
+<h2>
+    {% if rollout.id %}
+    Editing Rollout {{ rollout.id }}
+    {% else %}
+    New Rollout
+    {% endif %}
+</h2>
+<form method="POST" action="">
+    <dl>
+        <h3>Basic</h3>
+
+        {{ render_fields(form.basic_fields) }}
+    </dl>
+    <dl>
+        <h3>Advanced</h3>
+
+        {{ render_fields(form.advanced_fields) }}
+    </dl>
+    <p><input type=submit value=Finalise></p>
+</form>
+{% if rollout and rollout.stages %}
+<div id="stages">
+    {% for stage in rollout.stages %}
+    <div>
+        {{ stage['name'] }}
+        <ul>
+            {% for step in stage['steps'] %}
+            <li class="{{ step_class }}">{{ friendly_step(step)|safe }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+<form method="GET" action="{{ url_for('rollout_deploy', rollout_id=rollout.id) }}">
+    <p><input type=submit value=Deploy></p>
+</form>
+{% endif %}
+{% endblock %}

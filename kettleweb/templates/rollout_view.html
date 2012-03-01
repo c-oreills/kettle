@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+{% if rollout.rollout_start_dt and not (rollout.rollout_finish_dt or rollout.rollback_start_dt) %}
+<script type="text/JavaScript">
+    window.auto_refresh = true;
+    function auto_refresh_fn(){
+        if (window.auto_refresh == true){
+            location.reload(true);
+        }
+    };
+    setTimeout("auto_refresh_fn()", 1000);
+
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+    <h2>Rollout {{ rollout.id }}</h2>
+    {% if not (rollout.rollout_start_dt or rollout.rollback_start_dt) %}
+    <a href="{{ url_for('rollout_edit', rollout_id=rollout.id) }}">Edit</a>
+    {% endif %}
+    {% if rollout.rollout_start_dt and not (rollout.rollout_finish_dt or rollout.rollback_start_dt) %}
+    <p><a href="{{ url_for('rollout_abort', rollout_id=rollout.id) }}" class="abort">Abort</a></p>
+    <p><a href="" onclick="window.auto_refresh=false; return false;">Stop Autorefresh</a></p>
+    {% endif %}
+    <h3>Info</h3>
+    <ul>
+        <li>
+        Status: {{ rollout.nice_status() }}
+        </li>
+    </ul>
+    <ul>
+        <li>
+        Rollout:
+        {% if rollout.rollout_start_dt %}
+            {% if not rollout.rollout_finish_dt %}
+                Started {{ rollout.rollout_start_dt }}
+            {% else %}
+                {{ rollout.rollout_start_dt }} - {{ rollout.rollout_finish_dt }}
+            {% endif %}
+        {% else %}
+            {% if not rollout.rollout_finish_dt %}
+            Not started
+            {% else %}
+            Error: no start time, finished {{ rollout.rollout_finish_dt }}
+            {% endif %}
+        {% endif %}
+        </li>
+        <li>
+        Rollback:
+        {% if rollout.rollback_start_dt %}
+            {% if not rollout.rollback_finish_dt %}
+                Started {{ rollout.rollback_start_dt }}
+            {% else %}
+                {{ rollout.rollback_start_dt }} - {{ rollout.rollback_finish_dt }}
+            {% endif %}
+        {% else %}
+            {% if not rollout.rollback_finish_dt %}
+            Not started
+            {% else %}
+            Error: no start time, finished {{ rollout.rollback_finish_dt }}
+            {% endif %}
+        {% endif %}
+        </li>
+    </ul>
+    <ul>
+        </li>
+        {% if rollout.rollout_start_dt %}
+        <li>
+        <a href="{{ url_for('log', rollout_id=rollout.id, args='rollout') }}">Rollout log</a>
+        </li>
+        {% endif %}
+        {% if rollout.rollback_start_dt %}
+        <li>
+        <a href="{{ url_for('log', rollout_id=rollout.id, args='rollback') }}">Rollback log</a>
+        </li>
+        {% endif %}
+    </ul>
+    <h3>Stages</h3>
+    <p style="display: none;">
+        {{ rollout.config }}
+    </p>
+    <div id="stages">
+        {% for stage in rollout.stages %}
+        <div>
+            {{ stage['name'] }}
+            {% set current_stage = loop.index0 %}
+            <ul>
+                {% for step in stage['steps'] %}
+                {% set current_step = loop.index0 %}
+                {% if (rollout.current_stage, rollout.current_step) > (current_stage, current_step) %}
+                {% set step_class = "step_done" %}
+                {% elif (rollout.current_stage, rollout.current_step) == (current_stage, current_step) %}
+                {% set step_class = "step_now" %}
+                {% else %}
+                {% set step_class = "step_todo" %}
+                {% endif %}
+                <li class="{{ step_class }}">
+                {% if step_class in ("step_now", "step_done") %}<a href="{{ url_for('log', rollout_id=rollout.id, args='%s/%s' % (current_stage, current_step)) }}">{% endif %}
+                    {{ friendly_step(step)|safe }}
+                    {% if step_class in ("step_now", "step_done") %}</a>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
