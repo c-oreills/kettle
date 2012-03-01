@@ -166,4 +166,4 @@ class Rollout(Base):
     def log_setup_rollback(self):
         return NestedSetup(
                 self.base_handlers + (
-                    FileHandler(self.log_filename('rollout'), bubble=True)))
+                    FileHandler(self.log_filename('rollout'), bubble=True),))
