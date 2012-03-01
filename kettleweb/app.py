@@ -9,8 +9,8 @@ from kettle.steps import friendly_step_html
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
-rollout_cls = settings.ROLLOUT_CLS
-rollout_form_cls = settings.ROLLOUT_FORM_CLS
+rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
+rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
 
 app.jinja_env.globals['friendly_step'] = friendly_step_html
 
@@ -98,7 +98,10 @@ def latest_rollout_query(query_obj=None):
 def get_rollout(rollout_id):
     return session.Session.query(rollout_cls).filter_by(id=rollout_id).one()
 
-if __name__ == '__main__':
+def run_app():
     make_session()
     app.debug = settings.FLASK_DEBUG
     app.run()
+
+if __name__ == '__main__':
+    run_app()
