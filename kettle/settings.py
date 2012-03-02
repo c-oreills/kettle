@@ -8,7 +8,7 @@ def get_cls(cls_name):
     module = __import__(module)
     return getattr(module, cls)
 
-def load_settings(module_name):
+def load_settings(module_name='settings'):
     try:
         user_settings_module = __import__(module_name)
     except ImportError:
