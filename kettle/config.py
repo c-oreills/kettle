@@ -53,11 +53,11 @@ def gradual_rollout_parallel(task, servers, delay_gen, *args, **kwargs):
             delay_gen, make_parallel_step, *args, **kwargs)
 
 def gradual_rollout_generic(delay_gen, make_steps_fn, *args, **kwargs):
-    steps = chain(
-            make_steps_fn('one'),
-            [delay_gen.next()],
-            make_steps_fn('half'),
-            [delay_gen.next()],
-            make_steps_fn('all'),
-            )
-    return [step for step in steps if step]
+    steps = []
+    for num in 'one', 'half', 'all':
+        next_steps = make_steps_fn(num)
+        if next_steps:
+            steps.extend(next_steps)
+            if num != 'all':
+                steps.append(delay_gen.next())
+    return filter(None, steps) # Remove no-op steps
