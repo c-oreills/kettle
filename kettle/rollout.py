@@ -152,6 +152,11 @@ class Rollout(Base):
         except KeyError:
             raise Exception('No abort signal found for rollout_id %s' % (id,))
 
+    @property
+    def can_abort(self):
+        abort_signal = Rollout.abort_signals.get(self.id)
+        return abort_signal and not abort_signal.is_set()
+
     def log_filename(self, *args):
         return path.join(settings.LOG_DIR, '.'.join(map(str, (self.id,) + args)))
 

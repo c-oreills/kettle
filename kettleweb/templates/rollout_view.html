@@ -22,7 +22,9 @@
     <a href="{{ url_for('rollout_edit', rollout_id=rollout.id) }}">Edit</a>
     {% endif %}
     {% if rollout.rollout_start_dt and not (rollout.rollout_finish_dt or rollout.rollback_start_dt) %}
-    <p><a href="{{ url_for('rollout_abort', rollout_id=rollout.id) }}" class="abort">Abort</a></p>
+        {% if rollout.can_abort %}
+        <p><a href="{{ url_for('rollout_abort', rollout_id=rollout.id) }}" class="abort">Abort</a></p>
+        {% endif %}
     <p><a href="" onclick="window.auto_refresh=false; return false;">Stop Autorefresh</a></p>
     {% endif %}
     <h3>Info</h3>
