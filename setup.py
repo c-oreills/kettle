@@ -22,5 +22,6 @@ kettleweb=kettleweb.scripts:kettleweb
         'Jinja2>=2.6',
         'WTForms>=0.6.3',
         'mock>=0.7.0',
+        'SQLAlchemy>=0.7.5',
     ],
 )
