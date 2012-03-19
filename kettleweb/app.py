@@ -36,6 +36,8 @@ def rollout_edit(rollout_id):
         if rollout_id == 'new':
             flash('Saved as Rollout %s' % (rollout.id,))
             return redirect(url_for('rollout_edit', rollout_id=rollout.id))
+    elif rollout:
+        form = rollout_form_cls(**dict(rollout.config))
     return render_template('rollout_edit.html', form=form, rollout=rollout)
 
 @app.route('/rollout/<int:rollout_id>/deploy/')
