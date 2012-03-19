@@ -31,11 +31,7 @@ def rollout_edit(rollout_id):
             rollout = rollout_cls(form.data)
         else:
             rollout.config = form.data
-        try:
-            rollout.generate_stages()
-        except Exception, e:
-            flash('Error finalising: %s' % (e,))
-            return render_template('rollout_edit.html', form=form, rollout=rollout)
+        rollout.generate_stages()
         rollout.save()
         if rollout_id == 'new':
             flash('Saved as Rollout %s' % (rollout.id,))
