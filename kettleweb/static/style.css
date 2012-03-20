@@ -12,6 +12,15 @@
     color: #0000ff;
 }
 
+.step_error {
+    font-weight: bold;
+    color: #ff0000;
+}
+
+.step_error > a {
+    color: #ff0000;
+}
+
 #header {
     width: 800px;
     margin-right: auto;

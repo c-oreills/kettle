@@ -95,14 +95,18 @@
                 {% if (rollout.current_stage, rollout.current_step) > (current_stage, current_step) %}
                 {% set step_class = "step_done" %}
                 {% elif (rollout.current_stage, rollout.current_step) == (current_stage, current_step) %}
-                {% set step_class = "step_now" %}
+                    {% if rollout.rollback_start_dt %}
+                    {% set step_class = "step_error" %}
+                    {% else %}
+                    {% set step_class = "step_now" %}
+                    {% endif %}
                 {% else %}
                 {% set step_class = "step_todo" %}
                 {% endif %}
                 <li class="{{ step_class }}">
-                {% if step_class in ("step_now", "step_done") %}<a href="{{ url_for('log', rollout_id=rollout.id, args='%s/%s' % (current_stage, current_step)) }}">{% endif %}
+                {% if step_class in ("step_now", "step_done", "step_error") %}<a href="{{ url_for('log', rollout_id=rollout.id, args='%s/%s' % (current_stage, current_step)) }}">{% endif %}
                     {{ friendly_step(step)|safe }}
-                    {% if step_class in ("step_now", "step_done") %}</a>{% endif %}
+                {% if step_class in ("step_now", "step_done", "step_error") %}</a>{% endif %}
                 </li>
                 {% endfor %}
             </ul>
