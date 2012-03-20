@@ -97,6 +97,8 @@
                 {% elif (rollout.current_stage, rollout.current_step) == (current_stage, current_step) %}
                     {% if rollout.rollback_start_dt %}
                     {% set step_class = "step_error" %}
+                    {% elif rollout.rollout_finish_dt %}
+                    {% set step_class = "step_done" %}
                     {% else %}
                     {% set step_class = "step_now" %}
                     {% endif %}
