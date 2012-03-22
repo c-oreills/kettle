@@ -28,6 +28,15 @@
     <p><a href="" onclick="window.auto_refresh=false; return false;">Stop Autorefresh</a></p>
     {% endif %}
     <h3>Info</h3>
+    {% if rollout.info_list %}
+    <ul>
+        {% for info in rollout.info_list %}
+            <li>
+            {{ info|safe }}
+            </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     <ul>
         <li>
         Status: {{ rollout.nice_status() }}

@@ -157,6 +157,11 @@ class Rollout(Base):
         abort_signal = Rollout.abort_signals.get(self.id)
         return abort_signal and not abort_signal.is_set()
 
+    @property
+    def info_list(self):
+        "A list of HTML strings to be displayed in bullet points in the rollout view"
+        pass
+
     def log_filename(self, *args):
         return path.join(settings.LOG_DIR, '.'.join(map(str, (self.id,) + args)))
 
