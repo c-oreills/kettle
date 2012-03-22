@@ -2,7 +2,6 @@ from datetime import datetime
 from threading import Event
 from time import sleep
 import traceback
-import sys
 
 import logbook
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
@@ -159,13 +158,7 @@ class DelayTask(Task):
 
     def run(self):
         logbook.info('Waiting for %sm' % (self.minutes,),)
-        print 'Waiting for %sm' % (self.minutes,),
-        if True:
-            for i in xrange(2 * self.minutes):
-                sys.stdout.write('.')
-                sys.stdout.flush()
-                sleep(0.5)
-        print
+        sleep(self.minutes*60)
 
     @classmethod
     def friendly_str(cls, minutes, **kwargs):
