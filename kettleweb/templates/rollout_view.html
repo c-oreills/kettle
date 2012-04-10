@@ -80,12 +80,12 @@
         </li>
         {% if rollout.rollout_start_dt %}
         <li>
-        <a href="{{ url_for('log', rollout_id=rollout.id, args='rollout') }}">Rollout log</a>
+        <a href="{{ url_for('log_view', rollout_id=rollout.id, args='rollout') }}">Rollout log</a>
         </li>
         {% endif %}
         {% if rollout.rollback_start_dt %}
         <li>
-        <a href="{{ url_for('log', rollout_id=rollout.id, args='rollback') }}">Rollback log</a>
+        <a href="{{ url_for('log_view', rollout_id=rollout.id, args='rollback') }}">Rollback log</a>
         </li>
         {% endif %}
     </ul>
@@ -115,7 +115,7 @@
                 {% set step_class = "step_todo" %}
                 {% endif %}
                 <li class="{{ step_class }}">
-                {% if step_class in ("step_now", "step_done", "step_error") %}<a href="{{ url_for('log', rollout_id=rollout.id, args='%s/%s' % (current_stage, current_step)) }}">{% endif %}
+                {% if step_class in ("step_now", "step_done", "step_error") %}<a href="{{ url_for('log_view', rollout_id=rollout.id, args='%s/%s' % (current_stage, current_step)) }}">{% endif %}
                     {{ friendly_step(step)|safe }}
                 {% if step_class in ("step_now", "step_done", "step_error") %}</a>{% endif %}
                 </li>

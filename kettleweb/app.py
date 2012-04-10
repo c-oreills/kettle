@@ -78,7 +78,7 @@ def rollout_index():
     return render_template('rollout_index.html', rollouts=rollouts)
 
 @app.route('/log/<int:rollout_id>/<path:args>/')
-def log(rollout_id, args):
+def log_view(rollout_id, args):
     args = args.split('/')
     rollout = get_rollout(rollout_id)
     log_filename = rollout.log_filename(*args)
