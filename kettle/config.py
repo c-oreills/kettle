@@ -1,6 +1,6 @@
 import random
 
-from tasks import ParallelRunTask, SequentialRunTask
+from tasks import ParallelExecTask, SequentialExecTask
 
 def make_stage(name, steps):
     return {'name': name, 'steps': steps}
@@ -34,11 +34,11 @@ def make_random_picker(items):
 
 def gradual_run(task_cls, delay_gen, arg_kwargs_list):
     return gradual_run_generic(
-            task_cls, delay_gen, arg_kwargs_list, SequentialRunTask)
+            task_cls, delay_gen, arg_kwargs_list, SequentialExecTask)
 
 def gradual_run_parallel(task_cls, delay_gen, arg_kwargs_list):
     return gradual_run_generic(
-            task_cls, delay_gen, arg_kwargs_list, ParallelRunTask)
+            task_cls, delay_gen, arg_kwargs_list, ParallelExecTask)
 
 def gradual_run_generic(task_cls, delay_gen, arg_kwargs_list, run_task_cls):
     picker = make_random_picker(arg_kwargs_list)
@@ -56,4 +56,4 @@ def gradual_run_generic(task_cls, delay_gen, arg_kwargs_list, run_task_cls):
             steps.extend(next_steps)
             if num != 'all':
                 steps.append(delay_gen.next())
-    return SequentialRunTask(filter(None, steps)) # Remove no-op steps
+    return SequentialExecTask(filter(None, steps)) # Remove no-op steps
