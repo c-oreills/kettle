@@ -55,10 +55,8 @@ def rollout_abort(rollout_id):
     flash('Aborted Rollout %s' % (rollout_id,))
     return redirect(url_for('rollout_view', rollout_id=rollout_id))
 
-@app.route('/rollout/<rollout_id>/hide/')
+@app.route('/rollout/<int:rollout_id>/hide/')
 def rollout_hide(rollout_id):
-    if rollout_id == 'latest':
-        (rollout_id,) = latest_rollout_query(rollout_cls.id).first()
     session.Session.query(rollout_cls).filter_by(id=rollout_id).update({'hidden': True})
     session.Session.commit()
     flash('Successfully hid Rollout %s' % (rollout_id,))
