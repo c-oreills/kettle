@@ -8,7 +8,7 @@ from logbook import FileHandler, NestedSetup, NullHandler
 from db import Base, session
 from db.fields import JSONEncodedDict
 import settings
-from steps import thread_wait, run_step_thread
+from tasks import thread_wait
 
 class Rollout(Base):
     __tablename__ = 'rollout'
@@ -18,7 +18,7 @@ class Rollout(Base):
 
     hidden = Column(Boolean, default=False)
 
-    generate_stages_dt = Column(DateTime)
+    generate_tasks = Column(DateTime)
 
     rollout_start_dt = Column(DateTime)
     rollout_finish_dt = Column(DateTime)
@@ -26,20 +26,15 @@ class Rollout(Base):
     rollback_start_dt = Column(DateTime)
     rollback_finish_dt = Column(DateTime)
     
-    # Purely for nice display in web client
-    current_stage = Column(Integer)
-    current_step = Column(Integer)
-
     monitors = {}
     abort_signals = {}
 
     def __init__(self, config):
         self.config = config
-        self.stages = []
 
     def rollout(self):
-        if not self.stages:
-            raise Exception('No stages to rollout')
+        if not self.tasks:
+            raise Exception('No tasks to rollout')
 
         if self.rollout_start_dt:
             raise Exception('Rollout already started at %s' % 
@@ -53,16 +48,11 @@ class Rollout(Base):
 
         self.start_monitoring()
         try:
-            for stage_num, stage in enumerate(self.stages):
+            for task in self.tasks:
                 if self.aborting.is_set():
                     break
-                for step_num, step in enumerate(stage['steps']):
-                    if self.aborting.is_set():
-                        break
-                    self.current_stage, self.current_step = stage_num, step_num
-                    self.save()
-                    with self.log_setup_rollout():
-                        self._step_loop(step)
+                with self.log_setup_rollout():
+                    self._task_loop(task)
         finally:
             self.stop_monitoring()
             if not self.rollout_finish_dt:
@@ -76,9 +66,9 @@ class Rollout(Base):
         rollout_thread = Thread(target=self.rollout)
         rollout_thread.start()
 
-    def _step_loop(self, step):
-        step_thread = run_step_thread(self.id, step, self.aborting)
-        thread_wait(step_thread, self.aborting)
+    def _task_loop(self, task):
+        task_thread = task.run_threaded(self.aborting)
+        thread_wait(task_thread, self.aborting)
         if self.aborting.is_set():
             if not self.rollout_finish_dt:
                 self.rollout_finish_dt = datetime.now()
@@ -104,8 +94,6 @@ class Rollout(Base):
         self.monitoring.clear()
 
     def rollback(self):
-        # TODO: Should we explicitly refresh from db here?
-        print '****** Rollback ******'
         self.rollback_start_dt = datetime.now()
         self.save()
 
@@ -123,11 +111,11 @@ class Rollout(Base):
             session.Session.add(self)
         session.Session.commit()
 
-    def generate_stages(self):
-        self._generate_stages()
-        self.generate_stages_dt = datetime.now()
+    def generate_tasks(self):
+        self._generate_tasks()
+        self.generate_tasks_dt = datetime.now()
 
-    def _generate_stages(self):
+    def _generate_tasks(self):
         pass # Override
 
     def nice_status(self):

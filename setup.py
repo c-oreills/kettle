@@ -1,11 +1,16 @@
+import os
 from setuptools import setup, find_packages
 
 version='0.1'
+
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name='kettle',
     version=version,
     description='Python deploy system',
+    long_description=read('readme.md'),
     url='http://github.com/c-oreills/kettle',
     packages=find_packages(),
     include_package_data=True,

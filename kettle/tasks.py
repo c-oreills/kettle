@@ -1,5 +1,5 @@
 from datetime import datetime
-from threading import Event
+from threading import Event, Thread
 from time import sleep
 import traceback
 
@@ -10,7 +10,8 @@ from sqlalchemy.orm import relationship, backref
 
 from db import Base, session
 from db.fields import JSONEncodedDict
-from steps import run_step_thread, thread_wait, friendly_step_str, friendly_step_html
+
+from log_utils import get_thread_handlers, inner_thread_nested_setup
 
 def action_fn(action):
     def do_action(instance):
@@ -22,12 +23,26 @@ def action_fn(action):
                     (action, action_start_dt))
     return do_action
 
+def thread_wait(thread, abort_event):
+    try:
+        while True:
+            if abort_event.is_set():
+                pass # TODO: Set some kinda timeout
+            if thread.is_alive():
+                thread.join(1)
+            else:
+                break
+    except Exception:
+        print traceback.format_exc()
+        abort_event.set()
 
-class ReversibleTask(Base):
+
+class Task(Base):
     __tablename__ = 'task'
     id = Column(Integer, primary_key=True)
     type = Column(String(50), nullable=False)
     rollout_id = Column(Integer, ForeignKey('rollout.id'))
+    parent_id = Column(Integer, ForeignKey('task.id'))
     state = Column(JSONEncodedDict(1000))
 
     run_start_dt = Column(DateTime)
@@ -45,6 +60,7 @@ class ReversibleTask(Base):
     rollback_traceback = Column(String(500))
 
     rollout = relationship('Rollout', backref=backref('tasks', order_by=id))
+    parent = relationship('Task', backref=backref('children', order_by=id))
 
     run = action_fn('run')
     rollback = action_fn('rollback')
@@ -68,7 +84,7 @@ class ReversibleTask(Base):
         # action_fn should be a classmethod, hence getattr explicitly on type
         action_fn = getattr(type(self), '_%s' % (action,))
         try:
-            action_return = action_fn(self.state)
+            action_return = action_fn(self.state, self.children)
         except Exception, e:
             setattr(self, '%s_error' % (action,), e.message)
             setattr(self, '%s_traceback' % (action,), repr(traceback.format_exc()))
@@ -89,76 +105,107 @@ class ReversibleTask(Base):
         pass
 
     @classmethod
-    def _run(cls, state):
+    def _run(cls, state, children):
         pass
 
     @classmethod
-    def _rollback(cls, state):
+    def _rollback(cls, state, children):
         pass
 
-    @classmethod
-    def friendly_str(cls, *args, **kwargs):
-        return '%s(%s, %s)' % (cls.__name__, ', '.join(map(repr, args)), ', '.join(['%s=%s' % (k, v) for k, v in kwargs.iteritems()]))
+    def friendly_str(self):
+        return '%s(%s)' % (self.__name__, ', '.join(['%s=%s' % (k, v) for k, v in self.state.iteritems()]))
+
+    def friendly_html(self):
+        return self.friendly_str()
+
+    def run_threaded(self, abort_event):
+        outer_handlers = get_thread_handlers()
+        def thread_wrapped_task():
+            with inner_thread_nested_setup(outer_handlers):
+                try:
+                    self.run()
+                except Exception:
+                    # TODO: Log
+                    print traceback.format_exc()
+                    abort_event.set()
+        thread = Thread(target=thread_wrapped_task, name=self.__name__)
+        thread.start()
+        return thread
+
+
+class ExecTask(Task):
+    desc_string = ''
+
+    def _init(self, children, *args, **kwargs):
+        self.save()
+
+        for child in children:
+            child.parent = self.id
+            child.save()
 
     @classmethod
-    def friendly_html(cls, *args, **kwargs):
-        return cls.friendly_str(*args, **kwargs)
-
-
-class Task(object):
-    def __init__(self, rollout_id, *args, **kwargs):
-        self.rollout_id = rollout_id
-        self._init(*args, **kwargs)
-
-    def _init(self, *args, **kwargs):
-        pass
-
-    def run(self):
-        pass
+    def _run(cls, state, children):
+        cls.execute(children)
 
     @classmethod
-    def friendly_str(cls, *args, **kwargs):
-        return '%s(%s)' % (cls.__name__, ', '.join(
-            map(repr, args) + ['%s=%s' % (k, v) for k, v in kwargs.iteritems()]))
+    def _rollback(cls, state, children):
+        cls.execute(reversed(children))
 
-    @classmethod
-    def friendly_html(cls, *args, **kwargs):
-        return cls.friendly_str(*args, **kwargs)
+    def friendly_str(self):
+        return '%s%s' %\
+                (type(self).desc_string, ''.join(['\n\t%s' % child.friendly_str() for child in self.children]))
+
+    def friendly_html(self):
+        return '%s<ul>%s</ul>' %\
+                (type(self).desc_string,
+                ''.join(['<li>%s</li>' % child.friendly_html() for child in self.children]))
 
 
-class ParallelStepsTask(Task):
-    def _init(self, steps):
-        self.steps = steps
+class SequentialExecTask(ExecTask):
+    @staticmethod
+    def execute(tasks):
+        abort = Event()
+        for task in tasks:
+            thread = task.run_threaded(abort)
+            thread_wait(thread)
+        if abort.is_set():
+            raise Exception('Caught exception while executing tasks sequentially')
 
-    def run(self):
-        self.threads = []
-        self.parallel_abort = Event()
-        for step in self.steps:
-            thread = run_step_thread(self.rollout_id, step, self.parallel_abort)
-            self.threads.append(thread)
-        for thread in self.threads:
-            thread_wait(thread, self.parallel_abort)
-        if self.parallel_abort.is_set():
+
+class ParallelExecTask(ExecTask):
+    desc_string = 'Execute in parallel:'
+
+    @staticmethod
+    def execute(tasks):
+        threads = []
+        abort = Event()
+        for task in tasks:
+            thread = task.run_threaded(abort)
+            threads.append(thread)
+        for thread in threads:
+            thread_wait(thread, abort)
+        if abort.is_set():
             raise Exception('Caught exception while executing tasks in parallel')
-
-    @classmethod
-    def friendly_str(cls, steps):
-        return 'Execute in parallel:%s' %\
-                ''.join(['\n\t%s' % friendly_step_str(step) for step in steps])
-
-    @classmethod
-    def friendly_html(cls, steps):
-        return 'Execute in parallel:<ul>%s</ul>' %\
-                ''.join(['<li>%s</li>' % friendly_step_html(step) for step in steps])
 
 
 class DelayTask(Task):
-    def _init(self, minutes, **kwargs):
-        self.minutes = minutes
+    def _init(self, minutes, reversible=False):
+        self.state['minutes'] = minutes
+        self.state['reversible'] = reversible
 
-    def run(self):
-        logbook.info('Waiting for %sm' % (self.minutes,),)
-        sleep(self.minutes*60)
+    @classmethod
+    def _run(cls, state, children):
+        cls.wait(mins=state['minutes'])
+
+    @classmethod
+    def _rollback(cls, state, children):
+        if state['reversible']:
+            cls.wait(mins=state['minutes'])
+
+    @staticmethod
+    def wait(mins):
+        logbook.info('Waiting for %sm' % (mins,),)
+        sleep(mins*60)
 
     @classmethod
     def friendly_str(cls, minutes, **kwargs):

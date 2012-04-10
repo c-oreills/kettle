@@ -31,7 +31,7 @@ def rollout_edit(rollout_id):
             rollout = rollout_cls(form.data)
         else:
             rollout.config = form.data
-        rollout.generate_stages()
+        rollout.generate_tasks()
         rollout.save()
         if rollout_id == 'new':
             flash('Saved as Rollout %s' % (rollout.id,))
@@ -40,13 +40,13 @@ def rollout_edit(rollout_id):
         form = rollout_form_cls(**dict(rollout.config))
     return render_template('rollout_edit.html', form=form, rollout=rollout)
 
-@app.route('/rollout/<int:rollout_id>/deploy/')
-def rollout_deploy(rollout_id):
+@app.route('/rollout/<int:rollout_id>/run/')
+def rollout_run(rollout_id):
     rollout = get_rollout(rollout_id)
-    if rollout.generate_stages_dt > datetime.now() - timedelta(minutes=5):
+    if rollout.generate_tasks_dt > datetime.now() - timedelta(minutes=5):
         rollout.rollout_async()
     else:
-        flash('Cannot deploy - finalised more than 5 minutes ago. Refinalise!')
+        flash('Cannot run - finalised more than 5 minutes ago. Refinalise!')
     return redirect(url_for('rollout_view', rollout_id=rollout_id))
 
 @app.route('/rollout/<int:rollout_id>/abort/')

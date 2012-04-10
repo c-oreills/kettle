@@ -22,21 +22,16 @@
     </dl>
     <p><input type=submit value=Finalise></p>
 </form>
-{% if rollout and rollout.stages %}
-<div id="stages">
-    {% for stage in rollout.stages %}
+{% if rollout and rollout.tasks %}
+<div id="tasks">
+    {% for task in rollout.tasks %}
     <div>
-        {{ stage['name'] }}
-        <ul>
-            {% for step in stage['steps'] %}
-            <li class="{{ step_class }}">{{ friendly_step(step)|safe }}</li>
-            {% endfor %}
-        </ul>
+        {{ friendly_task(step)|safe }}
     </div>
     {% endfor %}
 </div>
-<form method="GET" action="{{ url_for('rollout_deploy', rollout_id=rollout.id) }}">
-    <p><input type=submit value=Deploy></p>
+<form method="GET" action="{{ url_for('rollout_run', rollout_id=rollout.id) }}">
+    <p><input type=submit value=Run></p>
 </form>
 {% endif %}
 {% endblock %}
