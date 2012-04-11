@@ -2,47 +2,85 @@ from mock import patch
 from threading import Event
 
 from kettle.rollout import Rollout
+from kettle.tasks import SequentialExecTask, Task
 from kettle.tests import AlchemyTestCase
 
-from mock_functions import calls, clear_calls, fn1, fn2, fn3, fn_error
+calls = []
+
+class TestTask(Task):
+    def run(self):
+        calls.append((self.id, 'run'))
+
+    def rollback(self):
+        calls.append((self.id, 'rollback'))
+
+
+class TestTaskFail(TestTask):
+    @classmethod
+    def _run(cls, state, children):
+        raise Exception
+
+
+def create_task(rollout, task_cls=None, *args):
+    if task_cls is None:
+        task_cls = TestTask
+    task = task_cls(rollout.id, *args)
+    task.save()
+    return task
+
 
 class TestRollout(AlchemyTestCase):
     def tearDown(self):
-        clear_calls()
+        del calls[:]
+
+    def assertRun(self, task):
+        self.assertIn((task.id, 'run'), calls)
+
+    def assertNotRun(self, task):
+        self.assertNotIn((task.id, 'run'), calls)
+
+    def assertRollback(self, task):
+        self.assertIn((task.id, 'rollback'), calls)
+
+    def assertNotRollback(self, task):
+        self.assertNotIn((task.id, 'rollback'), calls)
 
     def test_init(self):
         Rollout({})
 
     def test_rollout(self):
         rollout = Rollout({})
-        rollout.stages = [
-                make_stage('stage1', [(fn1,), (fn1,)]),
-                make_stage('stage2', [(fn2,), (fn3,)])
-                ]
+        rollout.save()
+        fn1 = create_task(rollout)
+        fn2 = create_task(rollout)
+        fn3 = create_task(rollout)
+        fn4 = create_task(rollout)
+        parent1 = create_task(rollout, SequentialExecTask, [fn1, fn2])
+        parent2 = create_task(rollout, SequentialExecTask, [fn3, fn4])
+        root = create_task(rollout, SequentialExecTask, [parent1, parent2])
+
         rollout.rollout()
 
-        called_fns = [fn for fn, _, _ in calls]
-
-        self.assertIn(fn1, called_fns)
-        self.assertIn(fn2, called_fns)
+        for task in fn1, fn2, fn3, fn4, parent1, parent2, root:
+            self.assertRun(task)
 
     @patch('kettle.rollout.Rollout.rollback')
     def test_quit_and_rollback_on_failure(self, rollback):
         rollout = Rollout({})
-        rollout.stages = [
-                make_stage('stage1', [(fn1,)]),
-                make_stage('stage2', [(fn_error,)]),
-                make_stage('stage3', [(fn2,)])
-                ]
+        fn1 = create_task(rollout)
+        fn_error = create_task(rollout, TestTaskFail)
+        fn2 = create_task(rollout)
+        root = create_task(rollout, SequentialExecTask, [fn1, fn_error, fn2])
         rollout.rollout()
 
-        called_fns = [fn for fn, _, _ in calls]
-
-        self.assertIn(fn1, called_fns)
-        self.assertIn(fn_error, called_fns)
-        self.assertNotIn(fn2, called_fns)
+        self.assertRun(fn1)
+        self.assertRun(fn_error)
+        self.assertNotRun(fn2)
 
         self.assertTrue(rollback.called)
+
+        self.assertRollback(fn_error)
+        self.assertRollback(fn1)
     
     @patch('kettle.rollout.Rollout.save') # Inline functions break pickle
     @patch('kettle.rollout.Rollout.rollback')
