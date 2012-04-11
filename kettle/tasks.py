@@ -68,7 +68,7 @@ class Task(Base):
     @declared_attr
     def __mapper_args__(cls):
         # Implementing single table inheritance
-        if cls.__name__ == 'ReversibleTask':
+        if cls.__name__ == 'Task':
             return {'polymorphic_on': cls.type,}
         else:
             return {'polymorphic_identity': cls.__name__}
@@ -145,7 +145,7 @@ class ExecTask(Task):
         self.save()
 
         for child in children:
-            child.parent = self.id
+            child.parent = self
             child.save()
 
     @classmethod
