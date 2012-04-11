@@ -221,6 +221,6 @@ class DelayTask(Task):
         logbook.info('Waiting for %sm' % (mins,),)
         sleep(mins*60)
 
-    @classmethod
-    def friendly_str(cls, minutes, **kwargs):
-        return 'Delay for %s mins' % (minutes,)
+    def friendly_str(self):
+        rev_str = ' (reversible)' if self.state['reversible'] else ''
+        return 'Delay for {minutes} mins{rev_str}'.format(rev_str=rev_str, **self.state)
