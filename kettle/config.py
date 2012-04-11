@@ -19,13 +19,13 @@ def pick_randomly(num, unprocessed, processed=None):
     return random.sample(unprocessed, num_to_pick)
 
 def make_random_picker(items):
-    unpicked_items = set(items)
-    picked_items = set()
+    unpicked_items = list(items)
+    picked_items = list()
     def picker(num):
         picks = pick_randomly(num, unpicked_items, picked_items)
         for pick in picks:
             unpicked_items.remove(pick)
-            picked_items.add(pick)
+            picked_items.append(pick)
         return picks
     return picker
 
