@@ -13,3 +13,15 @@ def make_session(bind=None):
     if bind is None:
         bind = engine
     session.Session = scoped_session(sessionmaker(bind=bind))
+
+
+def drop_all():
+    metadata_task('drop_all')
+
+def create_all():
+    metadata_task('create_all')
+
+def metadata_task(fn_name):
+    from kettle.rollout import Rollout
+    metadata_fn = getattr(Rollout.metadata, fn_name)
+    metadata_fn(engine)
