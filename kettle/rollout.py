@@ -46,12 +46,12 @@ class Rollout(Base):
         self.save()
         self.abort_signals[self.id] = self.aborting
 
-        root_task = self.get_root_task()
+        self.root_task # Check root task exists before starting
 
         self.start_monitoring()
         try:
             with self.log_setup_rollout():
-                task_thread = root_task.run_threaded(self.aborting)
+                task_thread = self.root_task.run_threaded(self.aborting)
                 thread_wait(task_thread, self.aborting)
             if self.aborting.is_set():
                 if not self.rollout_finish_dt:
@@ -65,7 +65,8 @@ class Rollout(Base):
             self.abort_signals.pop(self.id)
             self.save()
 
-    def get_root_task(self):
+    @property
+    def root_task(self):
         try:
             root_task = self.tasks.filter_by(parent=None).one()
         except orm.exc.MultipleResultsFound:
@@ -105,8 +106,7 @@ class Rollout(Base):
         self.save()
 
         with self.log_setup_rollback():
-            root_task = self.get_root_task()
-            root_task.rollback()
+            self.root_task.rollback()
 
         self.rollback_finish_dt = datetime.now()
         self.save()

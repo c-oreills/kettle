@@ -89,11 +89,13 @@
         </li>
         {% endif %}
     </ul>
-    <h3>Stages</h3>
+    <h3>Tasks</h3>
     <p style="display: none;">
         {{ rollout.config }}
     </p>
-    <div id="stages">
+    <div id="tasks">
+        {{ rollout.root_task.friendly_html()|safe }}
+        {#
         {% for stage in rollout.stages %}
         <div>
             {{ stage['name'] }}
@@ -121,6 +123,7 @@
                 </li>
                 {% endfor %}
             </ul>
+        #}
         </div>
         {% endfor %}
     </div>

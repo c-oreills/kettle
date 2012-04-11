@@ -5,14 +5,11 @@ from flask import flash, Flask, request, render_template, redirect, Response, ur
 
 from kettle import settings
 from kettle.db import session, make_session
-from kettle.steps import friendly_step_html
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
 rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
 rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
-
-app.jinja_env.globals['friendly_step'] = friendly_step_html
 
 
 @app.teardown_request
