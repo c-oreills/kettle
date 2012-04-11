@@ -125,7 +125,7 @@ class Rollout(Base):
     def _generate_tasks(self):
         pass # Override
 
-    def nice_status(self):
+    def friendly_status(self):
         if not self.rollout_start_dt:
             return 'Not started'
         else:

@@ -9,7 +9,7 @@
         </li>
         {% if latest %}
         <li>
-        Latest: <a href="{{ url_for('rollout_view', rollout_id='latest') }}">Rollout {{ latest.id }}</a> - {{ latest.nice_status() }}
+        Latest: <a href="{{ url_for('rollout_view', rollout_id='latest') }}">Rollout {{ latest.id }}</a> - {{ latest.friendly_status() }}
         </li>
         {% endif %}
         <li>

@@ -8,7 +8,7 @@
             <a href="{{ url_for('rollout_view', rollout_id=rollout.id) }}">Rollout {{ rollout.id }}</a>
         </td>
         <td>
-            {{ rollout.nice_status() }}
+            {{ rollout.friendly_status() }}
         </td>
     </tr>
     {% endfor %}
