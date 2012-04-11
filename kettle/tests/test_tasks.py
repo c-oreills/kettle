@@ -44,8 +44,8 @@ class TestTask(AlchemyTestCase):
 
         class RunTask(Task):
             @classmethod
-            def _run(cls, state):
-                return _run_mock(cls, state)
+            def _run(cls, state, children):
+                return _run_mock(cls, state, children)
 
         task = RunTask(self.rollout_id)
 
@@ -58,7 +58,7 @@ class TestTask(AlchemyTestCase):
 
         task.run()
 
-        _run_mock.assert_called_once_with(RunTask, task.state)
+        _run_mock.assert_called_once_with(RunTask, task.state, task.children)
 
         self.assertGreaterEqual(task.run_start_dt, start)
         self.assertEqual(task.run_error, None)
@@ -74,8 +74,8 @@ class TestTask(AlchemyTestCase):
 
         class RunTaskFail(Task):
             @classmethod
-            def _run(cls, state):
-                return _run_mock(cls, state)
+            def _run(cls, state, children):
+                return _run_mock(cls, state, children)
 
         task = RunTaskFail(self.rollout_id)
 
@@ -88,7 +88,7 @@ class TestTask(AlchemyTestCase):
 
         self.assertRaises(Exception, task.run)
 
-        _run_mock.assert_called_once_with(RunTaskFail, task.state)
+        _run_mock.assert_called_once_with(RunTaskFail, task.state, task.children)
 
         self.assertGreaterEqual(task.run_start_dt, start)
         self.assertEqual(task.run_error, 'broken')
