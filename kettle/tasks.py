@@ -60,7 +60,7 @@ class Task(Base):
     rollback_traceback = Column(String(500))
 
     rollout = relationship('Rollout', backref=backref('tasks', order_by=id))
-    parent = relationship('Task', backref=backref('children', order_by=id))
+    children = relationship('Task', backref=backref('parent', remote_side='Task.id', order_by=id))
 
     run = action_fn('run')
     rollback = action_fn('rollback')
