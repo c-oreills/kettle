@@ -176,11 +176,14 @@ class SequentialExecTask(ExecTask):
         abort = Event()
         task_ids = {task.id: task for task in tasks}
         for task_id in state['task_order']:
+            if abort.is_set():
+                break
             task = task_ids.pop(task_id)
             thread = task.run_threaded(abort)
             thread_wait(thread, abort)
-        assert not task_ids, "SequentialExecTask has children that are not in\
-                its task_order: %s" % (task_ids,)
+        else:
+            assert not task_ids, "SequentialExecTask has children that are not\
+                    in its task_order: %s" % (task_ids,)
         if abort.is_set():
             raise Exception('Caught exception while executing tasks sequentially')
 
