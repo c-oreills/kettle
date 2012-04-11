@@ -71,6 +71,8 @@ class Rollout(Base):
         except orm.exc.MultipleResultsFound:
             raise Exception('Could not get root task: more than one task has no \
                     parents: %s' % (self.tasks.filter_by(parent=None).all()))
+        except orm.exc.NoResultFound:
+            raise Exception('Could not get root task: no tasks have no parents')
         else:
             return root_task
 
@@ -102,11 +104,9 @@ class Rollout(Base):
         self.rollback_start_dt = datetime.now()
         self.save()
 
-        task_rollback_order = sorted(
-                self.tasks, key=lambda t: (t.run_start_dt, t.id), reverse=True)
         with self.log_setup_rollback():
-            for task in task_rollback_order:
-                task.rollback()
+            root_task = self.get_root_task()
+            root_task.rollback()
 
         self.rollback_finish_dt = datetime.now()
         self.save()
