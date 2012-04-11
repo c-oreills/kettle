@@ -99,9 +99,10 @@ class Task(Base):
             self.save()
 
     def log_setup_action(self, action):
-        return NestedSetup(get_thread_handlers(),
-                FileHandler(log_filename(
-                    self.rollout_id, self.id, action), bubble=True))
+        return NestedSetup(
+                get_thread_handlers() +
+                (FileHandler(log_filename(
+                    self.rollout_id, self.id, action), bubble=True),))
 
     def save(self):
         if self not in session.Session:

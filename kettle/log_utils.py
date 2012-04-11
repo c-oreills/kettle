@@ -11,7 +11,7 @@ def get_thread_handlers():
     # identical handler to the ones already in place
     handlers = list(Handler.stack_manager.iter_context_objects())
     handlers.reverse()
-    return handlers
+    return tuple(handlers)
 
 def inner_thread_nested_setup(outer_handlers):
     return NestedSetup([h for h in outer_handlers if h not in get_thread_handlers()])
