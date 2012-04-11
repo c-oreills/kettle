@@ -18,7 +18,7 @@ class Rollout(Base):
 
     hidden = Column(Boolean, default=False)
 
-    generate_tasks = Column(DateTime)
+    generate_tasks_dt = Column(DateTime)
 
     rollout_start_dt = Column(DateTime)
     rollout_finish_dt = Column(DateTime)
