@@ -125,8 +125,8 @@ class Task(Base):
                 try:
                     self.run()
                 except Exception:
-                    # TODO: Log
-                    print traceback.format_exc()
+                    # TODO: Check Log
+                    logbook.info(traceback.format_exc())
                     abort_event.set()
         thread = Thread(target=thread_wrapped_task, name=self.__name__)
         thread.start()
@@ -145,11 +145,11 @@ class ExecTask(Task):
 
     @classmethod
     def _run(cls, state, children):
-        cls.execute(children)
+        cls.execute(state, children)
 
     @classmethod
     def _rollback(cls, state, children):
-        cls.execute(reversed(children))
+        cls.execute(state, children)
 
     def friendly_str(self):
         return '%s%s' %\
@@ -162,12 +162,20 @@ class ExecTask(Task):
 
 
 class SequentialExecTask(ExecTask):
+    def _init(self, children, *args, **kwargs):
+        super(SequentialExecTask, self)._init(children, *args, **kwargs)
+        self.state['task_order'] = [child.id for child in children]
+
     @staticmethod
-    def execute(tasks):
+    def execute(state, tasks):
         abort = Event()
-        for task in tasks:
+        task_ids = {task.id: task for task in tasks}
+        for task_id in state['task_order']:
+            task = task_ids.pop(task_id)
             thread = task.run_threaded(abort)
-            thread_wait(thread)
+            thread_wait(thread, abort)
+        assert not task_ids, "SequentialExecTask has children that are not in\
+                its task_order: %s" % (task_ids,)
         if abort.is_set():
             raise Exception('Caught exception while executing tasks sequentially')
 
@@ -176,7 +184,7 @@ class ParallelExecTask(ExecTask):
     desc_string = 'Execute in parallel:'
 
     @staticmethod
-    def execute(tasks):
+    def execute(state, tasks):
         threads = []
         abort = Event()
         for task in tasks:
@@ -190,8 +198,9 @@ class ParallelExecTask(ExecTask):
 
 class DelayTask(Task):
     def _init(self, minutes, reversible=False):
-        self.state['minutes'] = minutes
-        self.state['reversible'] = reversible
+        self.state.update(
+                minutes=minutes,
+                reversible=reversible)
 
     @classmethod
     def _run(cls, state, children):

@@ -2,7 +2,7 @@ from datetime import datetime
 from os import path
 from threading import Event, Thread
 
-from sqlalchemy import Column, DateTime, Integer, PickleType, Boolean
+from sqlalchemy import Column, DateTime, Integer, PickleType, Boolean, orm
 from logbook import FileHandler, NestedSetup, NullHandler
 
 from db import Base, session
@@ -46,13 +46,18 @@ class Rollout(Base):
         self.save()
         self.abort_signals[self.id] = self.aborting
 
+        root_task = self.get_root_task()
+
         self.start_monitoring()
         try:
-            for task in self.tasks:
-                if self.aborting.is_set():
-                    break
-                with self.log_setup_rollout():
-                    self._task_loop(task)
+            with self.log_setup_rollout():
+                task_thread = root_task.run_threaded(self.aborting)
+                thread_wait(task_thread, self.aborting)
+            if self.aborting.is_set():
+                if not self.rollout_finish_dt:
+                    self.rollout_finish_dt = datetime.now()
+                    self.save()
+                self.rollback()
         finally:
             self.stop_monitoring()
             if not self.rollout_finish_dt:
@@ -60,20 +65,20 @@ class Rollout(Base):
             self.abort_signals.pop(self.id)
             self.save()
 
+    def get_root_task(self):
+        try:
+            root_task = self.tasks.filter_by(parent=None).one()
+        except orm.exc.MultipleResultsFound:
+            raise Exception('Could not get root task: more than one task has no \
+                    parents: %s' % (self.tasks.filter_by(parent=None).all()))
+        else:
+            return root_task
+
     def rollout_async(self):
         # remove stops error caused by having rollout in multiple sessions
         session.Session.remove()
         rollout_thread = Thread(target=self.rollout)
         rollout_thread.start()
-
-    def _task_loop(self, task):
-        task_thread = task.run_threaded(self.aborting)
-        thread_wait(task_thread, self.aborting)
-        if self.aborting.is_set():
-            if not self.rollout_finish_dt:
-                self.rollout_finish_dt = datetime.now()
-                self.save()
-            self.rollback()
 
     def start_monitoring(self):
         if self.monitoring.is_set():

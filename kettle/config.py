@@ -2,9 +2,6 @@ import random
 
 from tasks import ParallelExecTask, SequentialExecTask
 
-def make_stage(name, steps):
-    return {'name': name, 'steps': steps}
-
 def pick_randomly(num, unprocessed, processed=None):
     if processed is None:
         len_processed = 0
@@ -32,16 +29,16 @@ def make_random_picker(items):
         return picks
     return picker
 
-def gradual_run(task_cls, delay_gen, arg_kwargs_list):
-    return gradual_run_generic(
-            task_cls, delay_gen, arg_kwargs_list, SequentialExecTask)
+def gradual_exec(task_cls, delay_gen, args_kwargs_list):
+    return gradual_exec_generic(
+            task_cls, delay_gen, args_kwargs_list, SequentialExecTask)
 
-def gradual_run_parallel(task_cls, delay_gen, arg_kwargs_list):
-    return gradual_run_generic(
-            task_cls, delay_gen, arg_kwargs_list, ParallelExecTask)
+def gradual_exec_parallel(task_cls, delay_gen, args_kwargs_list):
+    return gradual_exec_generic(
+            task_cls, delay_gen, args_kwargs_list, ParallelExecTask)
 
-def gradual_run_generic(task_cls, delay_gen, arg_kwargs_list, run_task_cls):
-    picker = make_random_picker(arg_kwargs_list)
+def gradual_exec_generic(task_cls, delay_gen, args_kwargs_list, run_task_cls):
+    picker = make_random_picker(args_kwargs_list)
     def make_steps_fn(num):
         tasks = [task_cls(*args, **kwargs)
                 for (args, kwargs) in picker(num)]
