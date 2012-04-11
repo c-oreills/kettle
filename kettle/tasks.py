@@ -155,7 +155,7 @@ class Task(Base):
                     # TODO: Check Log
                     logbook.info(traceback.format_exc())
                     abort_event.set()
-        thread = Thread(target=thread_wrapped_task, name=self.__name__)
+        thread = Thread(target=thread_wrapped_task, name=self.__class__.__name__)
         thread.start()
         return thread
 
