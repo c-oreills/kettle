@@ -4,6 +4,7 @@ from time import sleep
 import traceback
 
 import logbook
+from logbook import FileHandler, NestedSetup
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship, backref
@@ -11,7 +12,7 @@ from sqlalchemy.orm import relationship, backref
 from db import Base, session
 from db.fields import JSONEncodedDict
 
-from log_utils import get_thread_handlers, inner_thread_nested_setup
+from log_utils import get_thread_handlers, inner_thread_nested_setup, log_filename
 
 def action_fn(action):
     def do_action(instance):
@@ -84,7 +85,8 @@ class Task(Base):
         # action_fn should be a classmethod, hence getattr explicitly on type
         action_fn = getattr(type(self), '_%s' % (action,))
         try:
-            action_return = action_fn(self.state, self.children)
+            with self.log_setup_action(action):
+                action_return = action_fn(self.state, self.children)
         except Exception, e:
             setattr(self, '%s_error' % (action,), e.message)
             setattr(self, '%s_traceback' % (action,), repr(traceback.format_exc()))
@@ -95,6 +97,11 @@ class Task(Base):
             setattr(self, '%s_return_dt' % (action,), datetime.now())
         finally:
             self.save()
+
+    def log_setup_action(self, action):
+        return NestedSetup(get_thread_handlers(),
+                FileHandler(log_filename(
+                    self.rollout_id, self.id, action), bubble=True))
 
     def save(self):
         if self not in session.Session:
@@ -122,6 +129,21 @@ class Task(Base):
 
     def friendly_html(self):
         return self.friendly_str()
+
+    def status(self):
+        if not self.rollout_start_dt:
+            return 'not_started'
+        else:
+            if not self.rollback_start_dt:
+                if not self.rollout_finish_dt:
+                    return 'started'
+                else:
+                    return 'finished'
+            else:
+                if not self.rollback_finish_dt:
+                    return 'rolling_back'
+                else:
+                    return 'rolled_back'
 
     def run_threaded(self, abort_event):
         outer_handlers = get_thread_handlers()

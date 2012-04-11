@@ -1,9 +1,18 @@
+from os import path
+
 from logbook import NestedSetup
 from logbook.handlers import Handler
 
+import settings
+
 def get_thread_handlers():
-    return list(Handler.stack_manager.iter_context_objects())
+    # Return a list of log handlers handling this thread
+    # They are reversed so that NestedSetup(get_thread_handlers()) gives an
+    # identical handler to the ones already in place
+    return list(reversed(Handler.stack_manager.iter_context_objects()))
 
 def inner_thread_nested_setup(outer_handlers):
-    return NestedSetup(reversed(
-        [h for h in outer_handlers if h not in get_thread_handlers()]))
+    return NestedSetup([h for h in outer_handlers if h not in get_thread_handlers()])
+
+def log_filename(self, *args):
+    return path.join(settings.LOG_DIR, '.'.join(map(str, args)))

@@ -1,5 +1,4 @@
 from datetime import datetime
-from os import path
 from threading import Event, Thread
 
 from sqlalchemy import Column, DateTime, Integer, PickleType, Boolean, orm
@@ -7,7 +6,7 @@ from logbook import FileHandler, NestedSetup, NullHandler
 
 from db import Base, session
 from db.fields import JSONEncodedDict
-import settings
+from log_utils import log_filename
 from tasks import thread_wait
 
 class Rollout(Base):
@@ -125,20 +124,29 @@ class Rollout(Base):
     def _generate_tasks(self):
         pass # Override
 
-    def friendly_status(self):
+    def status(self):
         if not self.rollout_start_dt:
-            return 'Not started'
+            return 'not_started'
         else:
             if not self.rollback_start_dt:
                 if not self.rollout_finish_dt:
-                    return 'Started at %s' % self.rollout_start_dt
+                    return 'started'
                 else:
-                    return 'Finished'
+                    return 'finished'
             else:
                 if not self.rollback_finish_dt:
-                    return 'Rolling back at %s' % self.rollback_start_dt
+                    return 'rolling_back'
                 else:
-                    return 'Rolled back'
+                    return 'rolled_back'
+
+    def friendly_status(self):
+        return {
+                'not_started': 'Not started',
+                'started': 'Started at %s' % self.rollout_start_dt,
+                'finished': 'Finished',
+                'rolling_back': 'Rolling back at %s' % self.rollback_start_dt,
+                'rolled_back': 'Rolled back',
+                }[self.status()]
 
     @classmethod
     def abort(cls, id):
@@ -157,18 +165,15 @@ class Rollout(Base):
         "A list of HTML strings to be displayed in bullet points in the rollout view"
         pass
 
-    def log_filename(self, *args):
-        return path.join(settings.LOG_DIR, '.'.join(map(str, (self.id,) + args)))
-
     base_handlers = (NullHandler(),)
 
     def log_setup_rollout(self):
-        return NestedSetup(self.base_handlers + (
-                FileHandler(self.log_filename('rollout'), bubble=True),
-                FileHandler(self.log_filename(
-                    self.current_stage, self.current_step), bubble=True)))
+        return self.log_setup_generic('rollout')
 
     def log_setup_rollback(self):
+        return self.log_setup_generic('rollback')
+
+    def log_setup_generic(self, action):
         return NestedSetup(
                 self.base_handlers + (
-                    FileHandler(self.log_filename('rollback'), bubble=True),))
+                    FileHandler(log_filename(self.id, action), bubble=True),))
