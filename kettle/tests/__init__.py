@@ -1,13 +1,13 @@
 from sqlalchemy import create_engine
 from unittest import TestCase
 
-from kettle import rollout, tasks # Needed for metadata
-from kettle.db import ENGINE_STRING, make_session
+from kettle.db import  make_session, drop_all, create_all
+from kettle.settings import ENGINE_STRING
 
 engine = create_engine('%s_test' % ENGINE_STRING)
 
-rollout.Rollout.metadata.drop_all(engine)
-rollout.Rollout.metadata.create_all(engine)
+drop_all(engine)
+create_all(engine)
 
 class AlchemyTestCase(TestCase):
     def _pre_setup(self):

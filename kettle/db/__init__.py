@@ -15,13 +15,15 @@ def make_session(bind=None):
     session.Session = scoped_session(sessionmaker(bind=bind))
 
 
-def drop_all():
-    metadata_task('drop_all')
+def drop_all(engine_=None):
+    metadata_task('drop_all', engine_)
 
-def create_all():
-    metadata_task('create_all')
+def create_all(engine_=None):
+    metadata_task('create_all', engine_)
 
-def metadata_task(fn_name):
+def metadata_task(fn_name, engine_):
     from kettle.rollout import Rollout
+    if engine_ is None:
+        engine_ = engine
     metadata_fn = getattr(Rollout.metadata, fn_name)
-    metadata_fn(engine)
+    metadata_fn(engine_)

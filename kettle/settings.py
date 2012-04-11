@@ -28,7 +28,7 @@ ROLLOUT_CLS = None
 
 ROLLOUT_FORM_CLS = None
 
-ENGINE_STRING = None
+ENGINE_STRING = 'sqlite:////tmp/kettle.sqlite'
 
 SECRET_KEY = None
 
