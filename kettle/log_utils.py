@@ -14,5 +14,5 @@ def get_thread_handlers():
 def inner_thread_nested_setup(outer_handlers):
     return NestedSetup([h for h in outer_handlers if h not in get_thread_handlers()])
 
-def log_filename(self, *args):
+def log_filename(*args):
     return path.join(settings.LOG_DIR, '.'.join(map(str, args)))

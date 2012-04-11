@@ -5,6 +5,7 @@ from flask import flash, Flask, request, render_template, redirect, Response, ur
 
 from kettle import settings
 from kettle.db import session, make_session
+from kettle.log_utils import log_filename
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
@@ -75,10 +76,9 @@ def rollout_index():
 @app.route('/log/<int:rollout_id>/<path:args>/')
 def log_view(rollout_id, args):
     args = args.split('/')
-    rollout = get_rollout(rollout_id)
-    log_filename = rollout.log_filename(*args)
-    if path.exists(log_filename):
-        return Response(open(log_filename).read(), mimetype='text/plain')
+    log = log_filename(rollout_id, *args)
+    if path.exists(log):
+        return Response(open(log).read(), mimetype='text/plain')
     else:
         return 'No such log file'
 
