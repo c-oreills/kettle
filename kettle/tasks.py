@@ -113,7 +113,9 @@ class Task(Base):
         pass
 
     def __repr__(self):
-        return '%s(%s, %s)' % (self.__name__, self.rollout_id, ', '.join(['%s=%s' % (k, v) for k, v in self.state.iteritems()]))
+        return '%s(%s, %s)' % (
+                self.__class__.__name__, self.rollout_id,
+                ', '.join(['%s=%s' % (k, v) for k, v in self.state.iteritems()]))
 
     def friendly_str(self):
         return repr(self)
