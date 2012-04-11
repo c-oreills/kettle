@@ -22,13 +22,9 @@
     </dl>
     <p><input type=submit value=Finalise></p>
 </form>
-{% if rollout and rollout.tasks %}
+{% if rollout and rollout.root_task %}
 <div id="tasks">
-    {% for task in rollout.tasks %}
-    <div>
-        {{ friendly_task(step)|safe }}
-    </div>
-    {% endfor %}
+    {{ rollout.root_task.friendly_html()|safe }}
 </div>
 <form method="GET" action="{{ url_for('rollout_run', rollout_id=rollout.id) }}">
     <p><input type=submit value=Run></p>
