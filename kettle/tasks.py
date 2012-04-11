@@ -1,5 +1,5 @@
 from datetime import datetime
-from threading import Event, Thread
+from threading import Thread
 from time import sleep
 import traceback
 
@@ -156,6 +156,13 @@ class ExecTask(Task):
     def _rollback(cls, state, children):
         cls.execute(state, children)
 
+    @staticmethod
+    def get_abort_signal(tasks):
+        from kettle import Rollout
+        rollout_id, = set(task.rollout_id for task in tasks)
+        abort = Rollout.abort_signals.get(rollout_id)
+        return abort
+
     def friendly_str(self):
         return '%s%s' %\
                 (type(self).desc_string, ''.join(['\n\t%s' % child.friendly_str() for child in self.children]))
@@ -171,9 +178,9 @@ class SequentialExecTask(ExecTask):
         super(SequentialExecTask, self)._init(children, *args, **kwargs)
         self.state['task_order'] = [child.id for child in children]
 
-    @staticmethod
-    def execute(state, tasks):
-        abort = Event()
+    @classmethod
+    def execute(cls, state, tasks):
+        abort = cls.get_abort_signal(tasks)
         task_ids = {task.id: task for task in tasks}
         for task_id in state['task_order']:
             if abort.is_set():
@@ -191,10 +198,10 @@ class SequentialExecTask(ExecTask):
 class ParallelExecTask(ExecTask):
     desc_string = 'Execute in parallel:'
 
-    @staticmethod
-    def execute(state, tasks):
+    @classmethod
+    def execute(cls, state, tasks):
         threads = []
-        abort = Event()
+        abort = cls.get_abort_signal(tasks)
         for task in tasks:
             thread = task.run_threaded(abort)
             threads.append(thread)
