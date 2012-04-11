@@ -68,7 +68,8 @@ class Rollout(Base):
     @property
     def root_task(self):
         try:
-            root_task = self.tasks.filter_by(parent=None).one()
+            root_task = session.Session.query('Task').filter_by(
+                    rollout=self, parent=None).one()
         except orm.exc.MultipleResultsFound:
             raise Exception('Could not get root task: more than one task has no \
                     parents: %s' % (self.tasks.filter_by(parent=None).all()))
