@@ -33,8 +33,8 @@ class Rollout(Base):
         self.config = config
 
     def rollout(self):
-        if not self.tasks:
-            raise Exception('No tasks to rollout')
+        if not self.root_task:
+            raise Exception('No root task to rollout')
 
         if self.rollout_start_dt:
             raise Exception('Rollout already started at %s' % 
