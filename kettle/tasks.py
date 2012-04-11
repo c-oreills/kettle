@@ -181,7 +181,7 @@ class ExecTask(Task):
 
     @staticmethod
     def get_abort_signal(tasks):
-        from kettle import Rollout
+        from kettle.rollout import Rollout
         rollout_id, = set(task.rollout_id for task in tasks)
         abort = Rollout.abort_signals.get(rollout_id)
         return abort
