@@ -4,12 +4,12 @@ from mock import patch, Mock
 
 from kettle.db import session
 from kettle.rollout import Rollout
-from kettle.tasks import ReversibleTask
+from kettle.tasks import Task
 from kettle.tests import AlchemyTestCase
 
-class TestReversibleTask(AlchemyTestCase):
-    # ReversibleTask must be subclassed in order to save
-    class BasicTask(ReversibleTask):
+class TestTask(AlchemyTestCase):
+    # Task must be subclassed in order to save
+    class BasicTask(Task):
         pass
 
     def setUp(self):
@@ -17,14 +17,14 @@ class TestReversibleTask(AlchemyTestCase):
         self.rollout.save()
         self.rollout_id = self.rollout.id
 
-    @patch('kettle.tasks.ReversibleTask._init')
+    @patch('kettle.tasks.Task._init')
     def test_init(self, _init):
         task = self.BasicTask(self.rollout_id)
         self.assertEqual(task.rollout_id, self.rollout_id)
         self.assertTrue(self.BasicTask._init.called)
 
     def test_state(self):
-        class StateTask(ReversibleTask):
+        class StateTask(Task):
             def _init(self, cake, pie):
                 self.state['cake'] = cake
                 self.state['pie'] = pie
@@ -42,7 +42,7 @@ class TestReversibleTask(AlchemyTestCase):
         start = datetime.now().replace(microsecond=0)
         _run_mock = Mock(return_value=10)
 
-        class RunTask(ReversibleTask):
+        class RunTask(Task):
             @classmethod
             def _run(cls, state):
                 return _run_mock(cls, state)
@@ -72,7 +72,7 @@ class TestReversibleTask(AlchemyTestCase):
         start = datetime.now().replace(microsecond=0)
         _run_mock = Mock(return_value=10, side_effect=Exception('broken'))
 
-        class RunTaskFail(ReversibleTask):
+        class RunTaskFail(Task):
             @classmethod
             def _run(cls, state):
                 return _run_mock(cls, state)
@@ -107,7 +107,7 @@ class TestReversibleTask(AlchemyTestCase):
         # Rolling back without running is valid
         _run_mock = Mock()
 
-        class RunlessTask(ReversibleTask):
+        class RunlessTask(Task):
             @classmethod
             def _run(cls, state):
                 return _run_mock(cls, state)

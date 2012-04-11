@@ -1,7 +1,6 @@
 from mock import patch
 from threading import Event
 
-from kettle.config import make_stage
 from kettle.rollout import Rollout
 from kettle.tests import AlchemyTestCase
 
