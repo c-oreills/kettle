@@ -29,15 +29,15 @@ def make_random_picker(items):
         return picks
     return picker
 
-def gradual_exec(task_cls, delay_gen, args_kwargs_list):
+def gradual_exec(rollout_id, task_cls, delay_gen, args_kwargs_list):
     return gradual_exec_generic(
-            task_cls, delay_gen, args_kwargs_list, SequentialExecTask)
+            rollout_id, task_cls, delay_gen, args_kwargs_list, SequentialExecTask)
 
-def gradual_exec_parallel(task_cls, delay_gen, args_kwargs_list):
+def gradual_exec_parallel(rollout_id, task_cls, delay_gen, args_kwargs_list):
     return gradual_exec_generic(
-            task_cls, delay_gen, args_kwargs_list, ParallelExecTask)
+            rollout_id, task_cls, delay_gen, args_kwargs_list, ParallelExecTask)
 
-def gradual_exec_generic(task_cls, delay_gen, args_kwargs_list, run_task_cls):
+def gradual_exec_generic(rollout_id, task_cls, delay_gen, args_kwargs_list, run_task_cls):
     picker = make_random_picker(args_kwargs_list)
     def make_steps_fn(num):
         tasks = [task_cls(*args, **kwargs)
@@ -45,7 +45,7 @@ def gradual_exec_generic(task_cls, delay_gen, args_kwargs_list, run_task_cls):
         if len(tasks) <= 1:
             return tasks
         else:
-            return [(run_task_cls, (tasks,))]
+            return [(run_task_cls, (rollout_id, tasks,))]
     steps = []
     for num in 'one', 'half', 'all':
         next_steps = make_steps_fn(num)
@@ -53,4 +53,4 @@ def gradual_exec_generic(task_cls, delay_gen, args_kwargs_list, run_task_cls):
             steps.extend(next_steps)
             if num != 'all':
                 steps.append(delay_gen.next())
-    return SequentialExecTask(filter(None, steps)) # Remove no-op steps
+    return SequentialExecTask(rollout_id, filter(None, steps)) # Remove no-op steps
