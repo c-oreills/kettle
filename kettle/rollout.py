@@ -67,9 +67,10 @@ class Rollout(Base):
 
     @property
     def root_task(self):
+        from kettle.tasks import Task
         try:
-            root_task = session.Session.query('Task').filter_by(
-                    rollout=self, parent=None).one()
+            root_task = session.Session.query(Task).filter(
+                    Task.rollout==self, Task.parent==None).one()
         except orm.exc.MultipleResultsFound:
             raise Exception('Could not get root task: more than one task has no \
                     parents: %s' % (self.tasks.filter_by(parent=None).all()))
