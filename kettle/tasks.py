@@ -112,8 +112,11 @@ class Task(Base):
     def _rollback(cls, state, children):
         pass
 
+    def __repr__(self):
+        return '%s(%s, %s)' % (self.__name__, self.rollout_id, ', '.join(['%s=%s' % (k, v) for k, v in self.state.iteritems()]))
+
     def friendly_str(self):
-        return '%s(%s)' % (self.__name__, ', '.join(['%s=%s' % (k, v) for k, v in self.state.iteritems()]))
+        return repr(self)
 
     def friendly_html(self):
         return self.friendly_str()
