@@ -148,6 +148,26 @@ class Rollout(Base):
                 'rolled_back': 'Rolled back',
                 }[self.status()]
 
+    def rollout_friendly_status(self):
+        return self.exec_friendly_status(self, 'rollout')
+
+    def rollback_friendly_status(self):
+        return self.exec_friendly_status(self, 'rollback')
+
+    def exec_friendly_status(self, action):
+        start_dt = getattr(self, '%s_start_dt' % action)
+        finish_dt = getattr(self, '%s_finish_dt' % action)
+        if start_dt:
+            if not finish_dt:
+                return 'Started at %s' % start_dt
+            else:
+                return '%s - %s' % (start_dt, finish_dt)
+        else:
+            if not finish_dt:
+                return 'Not started'
+            else:
+                return 'Error: no start time, finished %s' % finish_dt
+
     @classmethod
     def abort(cls, id):
         try:

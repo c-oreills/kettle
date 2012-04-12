@@ -44,36 +44,10 @@
     </ul>
     <ul>
         <li>
-        Rollout:
-        {% if rollout.rollout_start_dt %}
-            {% if not rollout.rollout_finish_dt %}
-                Started {{ rollout.rollout_start_dt }}
-            {% else %}
-                {{ rollout.rollout_start_dt }} - {{ rollout.rollout_finish_dt }}
-            {% endif %}
-        {% else %}
-            {% if not rollout.rollout_finish_dt %}
-            Not started
-            {% else %}
-            Error: no start time, finished {{ rollout.rollout_finish_dt }}
-            {% endif %}
-        {% endif %}
+        Rollout: {{ rollout.rollout_friendly_status }}
         </li>
         <li>
-        Rollback:
-        {% if rollout.rollback_start_dt %}
-            {% if not rollout.rollback_finish_dt %}
-                Started {{ rollout.rollback_start_dt }}
-            {% else %}
-                {{ rollout.rollback_start_dt }} - {{ rollout.rollback_finish_dt }}
-            {% endif %}
-        {% else %}
-            {% if not rollout.rollback_finish_dt %}
-            Not started
-            {% else %}
-            Error: no start time, finished {{ rollout.rollback_finish_dt }}
-            {% endif %}
-        {% endif %}
+        Rollback: {{ rollout.rollback_friendly_status }}
         </li>
     </ul>
     <ul>
