@@ -1,6 +1,7 @@
 from datetime import datetime
 from threading import Thread
 from time import sleep
+import sys
 import traceback
 
 import logbook
@@ -36,6 +37,18 @@ def thread_wait(thread, abort_event):
     except Exception:
         print traceback.format_exc()
         abort_event.set()
+
+
+class FailingThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super(FailingThread, self).__init__(*args, **kwargs)
+        self.exc_info = None
+
+    def run(self):
+        try:
+            super(FailingThread, self).run()
+        except Exception:
+            self.exc_info = sys.exc_info()
 
 
 class Task(Base):
@@ -156,7 +169,7 @@ class Task(Base):
                     # TODO: Check Log
                     logbook.info(traceback.format_exc())
                     abort_event.set()
-        thread = Thread(target=thread_wrapped_task, name=self.__class__.__name__)
+        thread = FailingThread(target=thread_wrapped_task, name=self.__class__.__name__)
         thread.start()
         return thread
 
@@ -211,11 +224,12 @@ class SequentialExecTask(ExecTask):
             task = task_ids.pop(task_id)
             thread = task.run_threaded(abort)
             thread_wait(thread, abort)
+            if thread.exc_info is not None:
+                raise Exception('Caught exception while executing task %s: %s' %
+                        (task, thread.exc_info))
         else:
             assert not task_ids, "SequentialExecTask has children that are not\
                     in its task_order: %s" % (task_ids,)
-        if abort.is_set():
-            raise Exception('Caught exception while executing tasks sequentially')
 
 
 class ParallelExecTask(ExecTask):
@@ -230,8 +244,9 @@ class ParallelExecTask(ExecTask):
             threads.append(thread)
         for thread in threads:
             thread_wait(thread, abort)
-        if abort.is_set():
-            raise Exception('Caught exception while executing tasks in parallel')
+            if thread.exc_info is not None:
+                raise Exception('Caught exception while executing task %s: %s' %
+                        (thread.target, thread.exc_info))
 
 
 class DelayTask(Task):

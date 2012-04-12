@@ -10,9 +10,11 @@ calls = []
 class TestTask(Task):
     def run(self):
         calls.append((self.id, 'run'))
+        super(TestTask, self).run()
 
     def rollback(self):
         calls.append((self.id, 'rollback'))
+        super(TestTask, self).rollback()
 
 
 class TestTaskFail(TestTask):
@@ -34,19 +36,24 @@ class TestRollout(AlchemyTestCase):
         del calls[:]
 
     def assertRun(self, task):
-        self.assertIn((task.id, 'run'), calls)
+        if (task.id, 'run') not in calls:
+            raise AssertionError('task %s (%s) has not been run' % (task.id, task))
 
     def assertNotRun(self, task):
-        self.assertNotIn((task.id, 'run'), calls)
+        if (task.id, 'run') in calls:
+            raise AssertionError('task %s (%s) has been run' % (task.id, task))
 
     def assertRollback(self, task):
-        self.assertIn((task.id, 'rollback'), calls)
+        if (task.id, 'rollback') not in calls:
+            raise AssertionError('task %s (%s) has not been rolled back' % (task.id, task))
 
     def assertNotRollback(self, task):
-        self.assertNotIn((task.id, 'rollback'), calls)
+        if (task.id, 'rollback') in calls:
+            raise AssertionError('task %s (%s) has been rolled back' % (task.id, task))
 
     def test_init(self):
-        Rollout({})
+        rollout = Rollout({})
+        rollout.save()
 
     def test_rollout(self):
         rollout = Rollout({})
@@ -67,6 +74,7 @@ class TestRollout(AlchemyTestCase):
     @patch('kettle.rollout.Rollout.rollback')
     def test_quit_and_rollback_on_failure(self, rollback):
         rollout = Rollout({})
+        rollout.save()
         fn1 = create_task(rollout)
         fn_error = create_task(rollout, TestTaskFail)
         fn2 = create_task(rollout)
@@ -93,26 +101,33 @@ class TestRollout(AlchemyTestCase):
             abort_event.set()
             finish_step_event.set()
 
-        def wake_monitor_then_wait(*args, **kwargs):
-            monitor_wake_event.set()
-            finish_step_event.wait()
-            self.assertFalse(rollback.called)
-
         class MonitoredRollout(Rollout):
             monitors = {
                     'mon': monitor,
                     }
 
         rollout = MonitoredRollout({'monitors': ['mon']})
-        rollout.stages = [
-                make_stage('stage_first', [(fn1,)]),
-                make_stage('stage_wait', [(wake_monitor_then_wait,)]),
-                make_stage('stage_not_called', [(fn2,)])
-                ]
+        rollout.save()
+
+        class WakeMonitorWaitTask(TestTask):
+            @classmethod
+            def _run(cls, state, children):
+                cls.wake_monitor_then_wait()
+
+            @staticmethod
+            def wake_monitor_then_wait():
+                monitor_wake_event.set()
+                finish_step_event.wait()
+                self.assertFalse(rollback.called)
+
+        fn_run = create_task(rollout)
+        fn_wake_monitor_wait = create_task(rollout, WakeMonitorWaitTask)
+        fn_not_called = create_task(rollout)
+        root = create_task(rollout, SequentialExecTask, [fn_run, fn_wake_monitor_wait, fn_not_called])
 
         rollout.rollout()
 
-        called_fns = [fn for fn, _, _ in calls]
-
-        self.assertNotIn(fn2, called_fns)
+        self.assertRun(fn_run)
+        self.assertRun(fn_wake_monitor_wait)
+        self.assertNotRun(fn_not_called)
         self.assertTrue(rollback.called)
