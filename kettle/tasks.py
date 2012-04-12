@@ -222,6 +222,13 @@ class SequentialExecTask(ExecTask):
             assert not task_ids, ("SequentialExecTask has children that are not "
                     "in its task_order: %s" % (task_ids,))
 
+    def friendly_html(self):
+        task_order = self.state['task_order']
+        child_ids = {c.id: c for c in self.children}
+        return '%s<ul>%s</ul>' %\
+                (type(self).desc_string,
+                ''.join(['<li>%s</li>' % child_ids[id].friendly_html() for id in task_order]))
+
 
 class ParallelExecTask(ExecTask):
     desc_string = 'Execute in parallel:'
