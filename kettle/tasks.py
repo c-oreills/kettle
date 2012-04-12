@@ -1,7 +1,5 @@
 from datetime import datetime
-from threading import Thread
 from time import sleep
-import sys
 import traceback
 
 import logbook
@@ -12,8 +10,8 @@ from sqlalchemy.orm import relationship, backref
 
 from db import Base, session
 from db.fields import JSONEncodedDict
-
-from log_utils import get_thread_handlers, inner_thread_nested_setup, log_filename
+from log_utils import log_filename
+from thread_utils import make_exec_threaded, thread_wait
 
 def action_fn(action):
     def do_action(instance):
@@ -24,33 +22,6 @@ def action_fn(action):
             raise Exception('%s already started at %s' % 
                     (action, action_start_dt))
     return do_action
-
-def thread_wait(thread, abort_event):
-    try:
-        while True:
-            if abort_event.is_set():
-                pass # TODO: Set some kinda timeout
-            if thread.is_alive():
-                thread.join(1)
-            else:
-                break
-    except Exception:
-        # TODO: Fix logging
-        print traceback.format_exc()
-        logbook.exception()
-        abort_event.set()
-
-
-class FailingThread(Thread):
-    def __init__(self, *args, **kwargs):
-        super(FailingThread, self).__init__(*args, **kwargs)
-        self.exc_info = None
-
-    def run(self):
-        try:
-            super(FailingThread, self).run()
-        except Exception:
-            self.exc_info = sys.exc_info()
 
 
 class Task(Base):
@@ -166,23 +137,9 @@ class Task(Base):
                 else:
                     return 'rolled_back'
 
-    def run_threaded(self, abort_event):
-        outer_handlers = get_thread_handlers()
-        task_id = self.id
-        def thread_wrapped_task():
-            with inner_thread_nested_setup(outer_handlers):
-                try:
-                    # Reload from db
-                    task = session.Session.query(Task).filter_by(id=task_id).one()
-                    task.run()
-                except Exception:
-                    # TODO: Fix logging
-                    print traceback.format_exc()
-                    logbook.exception()
-                    abort_event.set()
-        thread = FailingThread(target=thread_wrapped_task, name=self.__class__.__name__)
-        thread.start()
-        return thread
+    run_threaded = make_exec_threaded('run')
+    rollback_threaded = make_exec_threaded('rollback')
+
 
 
 class ExecTask(Task):
@@ -197,11 +154,11 @@ class ExecTask(Task):
 
     @classmethod
     def _run(cls, state, children):
-        cls.execute(state, children)
+        cls.exec_forwards(state, children)
 
     @classmethod
     def _rollback(cls, state, children):
-        pass
+        cls.exec_backwards(state, children)
 
     @staticmethod
     def get_abort_signal(tasks):
@@ -226,14 +183,22 @@ class SequentialExecTask(ExecTask):
         self.state['task_order'] = [child.id for child in children]
 
     @classmethod
-    def execute(cls, state, tasks):
+    def exec_forwards(cls, state, tasks):
+        cls.run_tasks('run_threaded', state['task_order'], tasks)
+
+    @classmethod
+    def exec_backwards(cls, state, tasks):
+        cls.run_tasks('rollback_threaded', reversed(state['task_order']), tasks)
+
+    @classmethod
+    def run_tasks(cls, method_name, task_order, tasks):
         abort = cls.get_abort_signal(tasks)
         task_ids = {task.id: task for task in tasks}
-        for task_id in state['task_order']:
+        for task_id in task_order:
             if abort.is_set():
                 break
             task = task_ids.pop(task_id)
-            thread = task.run_threaded(abort)
+            thread = getattr(task, method_name)(abort)
             thread_wait(thread, abort)
             if thread.exc_info is not None:
                 raise Exception('Caught exception while executing task %s: %s' %
