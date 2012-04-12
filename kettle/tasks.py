@@ -195,7 +195,7 @@ class SequentialExecTask(ExecTask):
         abort = cls.get_abort_signal(tasks)
         task_ids = {task.id: task for task in tasks}
         for task_id in task_order:
-            if abort.is_set():
+            if abort.is_set() and 'rollback' not in method_name:
                 break
             task = task_ids.pop(task_id)
             thread = getattr(task, method_name)(abort)
