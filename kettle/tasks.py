@@ -188,7 +188,10 @@ class SequentialExecTask(ExecTask):
 
     @classmethod
     def exec_backwards(cls, state, tasks):
-        cls.exec_tasks('rollback_threaded', reversed(state['task_order']), tasks)
+        run_tasks = [t for t in tasks if t.run_start_dt]
+        run_task_ids = set(t.id for t in run_tasks)
+        task_order = [t_id for t_id in reversed(state['task_order']) if t_id in run_task_ids]
+        cls.exec_tasks('rollback_threaded', task_order, run_tasks)
 
     @classmethod
     def exec_tasks(cls, method_name, task_order, tasks):
@@ -204,8 +207,8 @@ class SequentialExecTask(ExecTask):
                 raise Exception('Caught exception while executing task %s: %s' %
                         (task, thread.exc_info))
         else:
-            assert not task_ids, "SequentialExecTask has children that are not\
-                    in its task_order: %s" % (task_ids,)
+            assert not task_ids, ("SequentialExecTask has children that are not "
+                    "in its task_order: %s" % (task_ids,))
 
 
 class ParallelExecTask(ExecTask):

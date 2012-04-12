@@ -123,6 +123,7 @@ class TestRollout(AlchemyTestCase):
 
         self.assertRollback(task_error)
         self.assertRollback(task1)
+        self.assertNotRollback(task2)
     
     def test_monitor_rolls_back(self):
         monitor_wake_event = Event()
