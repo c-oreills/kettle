@@ -130,28 +130,35 @@ class Rollout(Base):
         pass # Override
 
     def status(self):
+        if self.is_aborting:
+            return 'aborting'
         if not self.rollout_start_dt:
             return 'not_started'
-        else:
-            if not self.rollback_start_dt:
-                if not self.rollout_finish_dt:
-                    return 'started'
-                else:
-                    return 'finished'
+
+        if not self.rollback_start_dt:
+            if not self.rollout_finish_dt:
+                return 'started'
             else:
-                if not self.rollback_finish_dt:
-                    return 'rolling_back'
-                else:
-                    return 'rolled_back'
+                return 'finished'
+        else:
+            if not self.rollback_finish_dt:
+                return 'rolling_back'
+            else:
+                return 'rolled_back'
 
     def friendly_status(self):
         return {
+                'aborting': 'Aborting',
                 'not_started': 'Not started',
                 'started': 'Started at %s' % self.rollout_start_dt,
                 'finished': 'Finished',
                 'rolling_back': 'Rolling back at %s' % self.rollback_start_dt,
                 'rolled_back': 'Rolled back',
                 }[self.status()]
+
+    def friendly_status_html(self):
+        return '<span id="rollout_{id}_status" class="status {status}">{friendly_status}</span>'.format(
+                id=self.id, status=self.status(), friendly_status=self.friendly_status())
 
     def rollout_friendly_status(self):
         return self.exec_friendly_status('rollout')
@@ -181,9 +188,16 @@ class Rollout(Base):
             raise Exception('No abort signal found for rollout_id %s' % (id,))
 
     @property
+    def abort_signal(self):
+        return Rollout.abort_signals.get(self.id)
+
+    @property
     def can_abort(self):
-        abort_signal = Rollout.abort_signals.get(self.id)
-        return abort_signal and not abort_signal.is_set()
+        return self.abort_signal and not self.abort_signal.is_set()
+
+    @property
+    def is_aborting(self):
+        return self.abort_signal and self.abort_signal.is_set()
 
     @property
     def info_list(self):

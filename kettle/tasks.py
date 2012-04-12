@@ -134,7 +134,7 @@ class Task(Base):
             log_link = '<a href="{url}">{action}</a>'.format(
                     url=log_url, action='%s log' % action.title())
             inner.append(log_link)
-        return '<span class="task_{class_}">{inner}</span>'.format(
+        return '<span class="task {class_}">{inner}</span>'.format(
                 class_=self.status(), inner=' '.join(inner))
 
     def status(self):

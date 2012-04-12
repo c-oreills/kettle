@@ -1,21 +1,26 @@
-.task_finished {
+.finished {
     font-style: italic;
     color: #448844;
 }
 
-.task_started {
+.started {
     font-weight: bold;
     color: #0000ff;
 }
 
-.task_rolling_back {
+.rolling_back {
     font-weight: bold;
     color: #ff0000;
 }
 
-.task_rolled_back {
+.rolled_back {
     font-style: italic;
     color: #ff7700;
+}
+
+.aborting {
+    font-weight: bold;
+    color: #ff0000;
 }
 
 #header {

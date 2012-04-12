@@ -39,7 +39,7 @@
     {% endif %}
     <ul>
         <li>
-        Status: {{ rollout.friendly_status() }}
+        Status: {{ rollout.friendly_status_html()|safe}}
         </li>
     </ul>
     <ul>
