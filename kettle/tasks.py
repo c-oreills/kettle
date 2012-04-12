@@ -184,14 +184,14 @@ class SequentialExecTask(ExecTask):
 
     @classmethod
     def exec_forwards(cls, state, tasks):
-        cls.run_tasks('run_threaded', state['task_order'], tasks)
+        cls.exec_tasks('run_threaded', state['task_order'], tasks)
 
     @classmethod
     def exec_backwards(cls, state, tasks):
-        cls.run_tasks('rollback_threaded', reversed(state['task_order']), tasks)
+        cls.exec_tasks('rollback_threaded', reversed(state['task_order']), tasks)
 
     @classmethod
-    def run_tasks(cls, method_name, task_order, tasks):
+    def exec_tasks(cls, method_name, task_order, tasks):
         abort = cls.get_abort_signal(tasks)
         task_ids = {task.id: task for task in tasks}
         for task_id in task_order:
@@ -212,11 +212,19 @@ class ParallelExecTask(ExecTask):
     desc_string = 'Execute in parallel:'
 
     @classmethod
-    def execute(cls, state, tasks):
+    def exec_forwards(cls, state, tasks):
+        cls.exec_tasks('run_threaded', tasks)
+
+    @classmethod
+    def exec_backwards(cls, state, tasks):
+        cls.exec_tasks('rollback_threaded', [t for t in tasks if t.run_start_dt])
+
+    @classmethod
+    def exec_tasks(cls, method_name, tasks):
         threads = []
         abort = cls.get_abort_signal(tasks)
         for task in tasks:
-            thread = task.run_threaded(abort)
+            thread = getattr(task, method_name)(abort)
             threads.append(thread)
         for thread in threads:
             thread_wait(thread, abort)
