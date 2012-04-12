@@ -39,12 +39,12 @@ class Task(Base):
     run_return_dt = Column(DateTime)
     run_traceback = Column(String(1000))
 
-    rollback_start_dt = Column(DateTime)
-    rollback_error = Column(String(500))
-    rollback_error_dt = Column(DateTime)
-    rollback_return = Column(String(500))
-    rollback_return_dt = Column(DateTime)
-    rollback_traceback = Column(String(1000))
+    revert_start_dt = Column(DateTime)
+    revert_error = Column(String(500))
+    revert_error_dt = Column(DateTime)
+    revert_return = Column(String(500))
+    revert_return_dt = Column(DateTime)
+    revert_traceback = Column(String(1000))
 
     rollout = relationship('Rollout', backref=backref('tasks', order_by=id))
     children = relationship('Task', backref=backref('parent', remote_side='Task.id', order_by=id))
@@ -64,12 +64,12 @@ class Task(Base):
         self._init(*args, **kwargs)
 
     run = action_fn('run')
-    __rollback = action_fn('rollback')
+    __revert = action_fn('revert')
 
-    def rollback(self):
+    def revert(self):
         if not self.run_start_dt:
-            raise Exception('Cannot rollback before running')
-        self.__rollback()
+            raise Exception('Cannot revert before running')
+        self.__revert()
 
     def call_and_record_action(self, action):
         setattr(self, '%s_start_dt' % (action,), datetime.now())
@@ -109,7 +109,7 @@ class Task(Base):
         pass
 
     @classmethod
-    def _rollback(cls, state, children):
+    def _revert(cls, state, children):
         pass
 
     def __repr__(self):
@@ -120,25 +120,37 @@ class Task(Base):
         return repr(self)
 
     def friendly_html(self):
-        return self.friendly_str()
+        from kettleweb.app import url_for
+        inner = [self.friendly_str()]
+        for action in 'run', 'revert':
+            if not getattr(self, '%s_start_dt' % action):
+                continue
+            log_url = url_for(
+                    'log_view', rollout_id=self.rollout_id, args='/'.join(
+                        map(str, (self.id, action))))
+            log_link = '<a href="{url}">{action}</a>'.format(
+                    url=log_url, action=action.title())
+            inner.append(log_link)
+        return '<span class="{class_}">{inner}</span>'.format(
+                class_=self.status, inner=' '.join(inner))
 
     def status(self):
-        if not self.rollout_start_dt:
+        if not self.run_start_dt:
             return 'not_started'
         else:
-            if not self.rollback_start_dt:
-                if not self.rollout_finish_dt:
+            if not self.revert_start_dt:
+                if not self.run_finish_dt:
                     return 'started'
                 else:
                     return 'finished'
             else:
-                if not self.rollback_finish_dt:
+                if not self.revert_finish_dt:
                     return 'rolling_back'
                 else:
                     return 'rolled_back'
 
     run_threaded = make_exec_threaded('run')
-    rollback_threaded = make_exec_threaded('rollback')
+    revert_threaded = make_exec_threaded('revert')
 
 
 
@@ -157,7 +169,7 @@ class ExecTask(Task):
         cls.exec_forwards(state, children)
 
     @classmethod
-    def _rollback(cls, state, children):
+    def _revert(cls, state, children):
         cls.exec_backwards(state, children)
 
     @staticmethod
@@ -191,14 +203,14 @@ class SequentialExecTask(ExecTask):
         run_tasks = [t for t in tasks if t.run_start_dt]
         run_task_ids = set(t.id for t in run_tasks)
         task_order = [t_id for t_id in reversed(state['task_order']) if t_id in run_task_ids]
-        cls.exec_tasks('rollback_threaded', task_order, run_tasks)
+        cls.exec_tasks('revert_threaded', task_order, run_tasks)
 
     @classmethod
     def exec_tasks(cls, method_name, task_order, tasks):
         abort = cls.get_abort_signal(tasks)
         task_ids = {task.id: task for task in tasks}
         for task_id in task_order:
-            if abort.is_set() and 'rollback' not in method_name:
+            if abort.is_set() and 'revert' not in method_name:
                 break
             task = task_ids.pop(task_id)
             thread = getattr(task, method_name)(abort)
@@ -220,7 +232,7 @@ class ParallelExecTask(ExecTask):
 
     @classmethod
     def exec_backwards(cls, state, tasks):
-        cls.exec_tasks('rollback_threaded', [t for t in tasks if t.run_start_dt])
+        cls.exec_tasks('revert_threaded', [t for t in tasks if t.run_start_dt])
 
     @classmethod
     def exec_tasks(cls, method_name, tasks):
@@ -247,7 +259,7 @@ class DelayTask(Task):
         cls.wait(mins=state['minutes'])
 
     @classmethod
-    def _rollback(cls, state, children):
+    def _revert(cls, state, children):
         if state['reversible']:
             cls.wait(mins=state['minutes'])
 

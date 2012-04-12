@@ -107,7 +107,7 @@ class Rollout(Base):
         self.save()
 
         with self.log_setup_rollback():
-            self.root_task.rollback()
+            self.root_task.revert()
 
         self.rollback_finish_dt = datetime.now()
         self.save()
@@ -149,10 +149,10 @@ class Rollout(Base):
                 }[self.status()]
 
     def rollout_friendly_status(self):
-        return self.exec_friendly_status(self, 'rollout')
+        return self.exec_friendly_status('rollout')
 
     def rollback_friendly_status(self):
-        return self.exec_friendly_status(self, 'rollback')
+        return self.exec_friendly_status('rollback')
 
     def exec_friendly_status(self, action):
         start_dt = getattr(self, '%s_start_dt' % action)

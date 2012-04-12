@@ -103,8 +103,8 @@ class TestTask(AlchemyTestCase):
         task.run()
         self.assertRaises(Exception, task.run)
 
-    def test_rollback_before_run(self):
-        # Rolling back without running is valid
+    def test_revert_before_run(self):
+        # Reverting without running is valid
         _run_mock = Mock()
 
         class RunlessTask(Task):
@@ -113,6 +113,6 @@ class TestTask(AlchemyTestCase):
                 return _run_mock(cls, state)
 
         task = RunlessTask(self.rollout_id)
-        self.assertRaises(task.rollback)
+        self.assertRaises(task.revert)
 
         _run_mock.assert_not_called()

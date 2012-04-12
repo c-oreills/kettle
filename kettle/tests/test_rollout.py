@@ -11,9 +11,9 @@ class TestTask(Task):
         calls.append((self.id, 'run'))
         super(TestTask, self).run()
 
-    def rollback(self):
-        calls.append((self.id, 'rollback'))
-        super(TestTask, self).rollback()
+    def revert(self):
+        calls.append((self.id, 'revert'))
+        super(TestTask, self).revert()
 
 
 class TestTaskFail(TestTask):
@@ -42,13 +42,13 @@ class TestRollout(AlchemyTestCase):
         if (task.id, 'run') in calls:
             raise AssertionError('%s has been run' % (task,))
 
-    def assertRollback(self, task):
-        if (task.id, 'rollback') not in calls:
-            raise AssertionError('%s has not been rolled back' % (task,))
+    def assertReverted(self, task):
+        if (task.id, 'revert') not in calls:
+            raise AssertionError('%s has not been reverted' % (task,))
 
-    def assertNotRollback(self, task):
-        if (task.id, 'rollback') in calls:
-            raise AssertionError('%s has been rolled back' % (task,))
+    def assertNotReverted(self, task):
+        if (task.id, 'revert') in calls:
+            raise AssertionError('%s has been reverted' % (task,))
 
     def test_init(self):
         rollout = Rollout({})
@@ -62,7 +62,7 @@ class TestRollout(AlchemyTestCase):
         rollout.rollout()
 
         self.assertRun(root)
-        self.assertNotRollback(root)
+        self.assertNotReverted(root)
 
     def test_single_task_rollback(self):
         rollout = Rollout({})
@@ -72,7 +72,7 @@ class TestRollout(AlchemyTestCase):
         rollout.rollout()
 
         self.assertRun(root)
-        self.assertRollback(root)
+        self.assertReverted(root)
 
     def _test_exec_rollout(self, exec_cls):
         rollout = Rollout({})
@@ -91,7 +91,7 @@ class TestRollout(AlchemyTestCase):
         # override their call methods
         for task in task1, task2, task3, task4:
             self.assertRun(task)
-            self.assertNotRollback(task)
+            self.assertNotReverted(task)
 
     def test_sequential_exec_rollout(self):
         self._test_exec_rollout(SequentialExecTask)
@@ -121,9 +121,9 @@ class TestRollout(AlchemyTestCase):
 
         self.assertEqual(RecordedRollout.rollback_calls, [rollout])
 
-        self.assertRollback(task_error)
-        self.assertRollback(task1)
-        self.assertNotRollback(task2)
+        self.assertReverted(task_error)
+        self.assertReverted(task1)
+        self.assertNotReverted(task2)
     
     def test_monitor_rolls_back(self):
         monitor_wake_event = Event()
@@ -169,5 +169,5 @@ class TestRollout(AlchemyTestCase):
         self.assertRun(task_wake_monitor_wait)
         self.assertNotRun(task_not_called)
         self.assertEqual(MonitoredRollout.rollback_calls, [rollout])
-        self.assertRollback(task_run)
-        self.assertRollback(task_wake_monitor_wait)
+        self.assertReverted(task_run)
+        self.assertReverted(task_wake_monitor_wait)
