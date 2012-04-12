@@ -275,7 +275,7 @@ class DelayTask(Task):
         sleep(mins*60)
 
     def friendly_str(self):
-        if self.run_start_dt and not self.run_finish_dt:
+        if self.run_start_dt and not self.run_return_dt:
             remaining_secs = (datetime.now() - self.run_start_dt).seconds
             remaining_mins = remaining_secs / 60
             remaining_secs = remaining_secs % 60
