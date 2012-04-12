@@ -63,6 +63,17 @@ class Task(Base):
         self.state = {}
         self._init(*args, **kwargs)
 
+    def _init(self, *args, **kwargs):
+        pass
+
+    @classmethod
+    def _run(cls, state, children):
+        pass
+
+    @classmethod
+    def _revert(cls, state, children):
+        pass
+
     run = action_fn('run')
     __revert = action_fn('revert')
 
@@ -70,6 +81,9 @@ class Task(Base):
         if not self.run_start_dt:
             raise Exception('Cannot revert before running')
         self.__revert()
+
+    run_threaded = make_exec_threaded('run')
+    revert_threaded = make_exec_threaded('revert')
 
     def call_and_record_action(self, action):
         setattr(self, '%s_start_dt' % (action,), datetime.now())
@@ -100,17 +114,6 @@ class Task(Base):
         if self not in session.Session:
             session.Session.add(self)
         session.Session.commit()
-
-    def _init(self, *args, **kwargs):
-        pass
-
-    @classmethod
-    def _run(cls, state, children):
-        pass
-
-    @classmethod
-    def _revert(cls, state, children):
-        pass
 
     def __repr__(self):
         return '<%s: id=%s, rollout_id=%s, state=%s>' % (
@@ -148,10 +151,6 @@ class Task(Base):
                     return 'rolling_back'
                 else:
                     return 'rolled_back'
-
-    run_threaded = make_exec_threaded('run')
-    revert_threaded = make_exec_threaded('revert')
-
 
 
 class ExecTask(Task):
