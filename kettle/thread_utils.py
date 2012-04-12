@@ -27,7 +27,8 @@ def make_exec_threaded(method_name):
             with inner_thread_nested_setup(outer_handlers):
                 try:
                     # Reload from db
-                    task = session.Session.query('Task').filter_by(id=task_id).one()
+                    from kettle.tasks import Task
+                    task = session.Session.query(Task).filter_by(id=task_id).one()
                     getattr(task, method_name)()
                 except Exception:
                     # TODO: Fix logging
