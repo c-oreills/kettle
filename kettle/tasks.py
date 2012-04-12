@@ -275,5 +275,17 @@ class DelayTask(Task):
         sleep(mins*60)
 
     def friendly_str(self):
+        if self.run_start_dt and not self.run_finish_dt:
+            remaining_secs = (datetime.now() - self.run_start_dt).seconds
+            remaining_mins = remaining_secs / 60
+            remaining_secs = remaining_secs % 60
+            if remaining_mins:
+                remaining_str = ' (%d:%02d mins left)' % (remaining_mins, remaining_secs)
+            else:
+                remaining_str = ' (%d secs left)' % (remaining_secs,)
+        else:
+            remaining_str = ''
+
         rev_str = ' (reversible)' if self.state['reversible'] else ''
-        return 'Delay for {minutes} mins{rev_str}'.format(rev_str=rev_str, **self.state)
+        return 'Delay for {minutes} mins{remaining_str}{rev_str}'.format(
+                remaining_str=remaining_str, rev_str=rev_str, **self.state)
