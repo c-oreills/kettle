@@ -129,22 +129,22 @@ class Task(Base):
                     'log_view', rollout_id=self.rollout_id, args='/'.join(
                         map(str, (self.id, action))))
             log_link = '<a href="{url}">{action}</a>'.format(
-                    url=log_url, action=action.title())
+                    url=log_url, action='%s log' % action.title())
             inner.append(log_link)
-        return '<span class="{class_}">{inner}</span>'.format(
-                class_=self.status, inner=' '.join(inner))
+        return '<span class="task_{class_}">{inner}</span>'.format(
+                class_=self.status(), inner=' '.join(inner))
 
     def status(self):
         if not self.run_start_dt:
             return 'not_started'
         else:
             if not self.revert_start_dt:
-                if not self.run_finish_dt:
+                if not self.run_return_dt:
                     return 'started'
                 else:
                     return 'finished'
             else:
-                if not self.revert_finish_dt:
+                if not self.revert_return_dt:
                     return 'rolling_back'
                 else:
                     return 'rolled_back'

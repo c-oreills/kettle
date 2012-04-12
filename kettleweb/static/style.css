@@ -1,24 +1,21 @@
-.step_done {
+.task_finished {
     font-style: italic;
     color: #448844;
 }
 
-.step_done > a {
-    color: #448844;
-}
-
-.step_now {
+.task_started {
     font-weight: bold;
     color: #0000ff;
 }
 
-.step_error {
+.task_rolling_back {
     font-weight: bold;
     color: #ff0000;
 }
 
-.step_error > a {
-    color: #ff0000;
+.task_rolled_back {
+    font-style: italic;
+    color: #ff7700;
 }
 
 #header {
