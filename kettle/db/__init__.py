@@ -1,11 +1,21 @@
-from sqlalchemy import create_engine
+import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from kettle import settings
 from kettle.db import session
 
-engine = create_engine(settings.ENGINE_STRING)
+def create_engine(engine_string=None, *args, **kwargs):
+    if engine_string is None:
+        engine_string = settings.ENGINE_STRING
+    if engine_string.startswith('sqlite'):
+        # Make SQLite thread safe
+        connect_args = kwargs.get('connect_args', {})
+        connect_args['check_same_thread'] = False
+        kwargs['connect_args'] = connect_args
+    return sqlalchemy.create_engine(engine_string, *args, **kwargs)
+
+engine = create_engine()
 
 Base = declarative_base()
 

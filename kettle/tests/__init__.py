@@ -1,8 +1,7 @@
 from logbook import TestHandler
-from sqlalchemy import create_engine
 from unittest import TestCase
 
-from kettle.db import  make_session, drop_all, create_all
+from kettle.db import  make_session, drop_all, create_all, create_engine
 from kettle.settings import ENGINE_STRING
 
 engine = create_engine('%s_test' % ENGINE_STRING)
