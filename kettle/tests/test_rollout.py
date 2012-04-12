@@ -1,8 +1,7 @@
-from mock import patch
 from threading import Event
 
 from kettle.rollout import Rollout
-from kettle.tasks import SequentialExecTask, Task
+from kettle.tasks import ParallelExecTask, SequentialExecTask, Task
 from kettle.tests import AlchemyTestCase
 
 calls = []
@@ -55,25 +54,52 @@ class TestRollout(AlchemyTestCase):
         rollout = Rollout({})
         rollout.save()
 
-    def test_rollout(self):
+    def test_single_task_rollout(self):
         rollout = Rollout({})
         rollout.save()
-        fn1 = create_task(rollout)
-        fn2 = create_task(rollout)
-        fn3 = create_task(rollout)
-        fn4 = create_task(rollout)
-        parent1 = create_task(rollout, SequentialExecTask, [fn1, fn2])
-        parent2 = create_task(rollout, SequentialExecTask, [fn3, fn4])
-        root = create_task(rollout, SequentialExecTask, [parent1, parent2])
+        root = create_task(rollout)
+
+        rollout.rollout()
+
+        self.assertRun(root)
+        self.assertNotRollback(root)
+
+    def test_single_task_rollback(self):
+        rollout = Rollout({})
+        rollout.save()
+        root = create_task(rollout, TestTaskFail)
+
+        rollout.rollout()
+
+        self.assertRun(root)
+        self.assertRollback(root)
+
+    def _test_exec_rollout(self, exec_cls):
+        rollout = Rollout({})
+        rollout.save()
+        task1 = create_task(rollout)
+        task2 = create_task(rollout)
+        task3 = create_task(rollout)
+        task4 = create_task(rollout)
+        parent1 = create_task(rollout, exec_cls, [task1, task2])
+        parent2 = create_task(rollout, exec_cls, [task3, task4])
+        root = create_task(rollout, exec_cls, [parent1, parent2])
 
         rollout.rollout()
 
         # Do not assert parents or root is run since otherwise we'd have to
         # override their call methods
-        for task in fn1, fn2, fn3, fn4:
+        for task in task1, task2, task3, task4:
             self.assertRun(task)
+            self.assertNotRollback(task)
 
-    def test_quit_and_rollback_on_failure(self):
+    def test_sequential_exec_rollout(self):
+        self._test_exec_rollout(SequentialExecTask)
+
+    def test_parallel_exec_rollout(self):
+        self._test_exec_rollout(ParallelExecTask)
+
+    def test_sequential_quit_and_rollback_on_failure(self):
         class RecordedRollout(Rollout):
             rollback_calls = []
 
@@ -83,20 +109,20 @@ class TestRollout(AlchemyTestCase):
 
         rollout = RecordedRollout({})
         rollout.save()
-        fn1 = create_task(rollout)
-        fn_error = create_task(rollout, TestTaskFail)
-        fn2 = create_task(rollout)
-        root = create_task(rollout, SequentialExecTask, [fn1, fn_error, fn2])
+        task1 = create_task(rollout)
+        task_error = create_task(rollout, TestTaskFail)
+        task2 = create_task(rollout)
+        root = create_task(rollout, SequentialExecTask, [task1, task_error, task2])
         rollout.rollout()
 
-        self.assertRun(fn1)
-        self.assertRun(fn_error)
-        self.assertNotRun(fn2)
+        self.assertRun(task1)
+        self.assertRun(task_error)
+        self.assertNotRun(task2)
 
         self.assertEqual(RecordedRollout.rollback_calls, [rollout])
 
-        self.assertRollback(fn_error)
-        self.assertRollback(fn1)
+        self.assertRollback(task_error)
+        self.assertRollback(task1)
     
     def test_monitor_rolls_back(self):
         monitor_wake_event = Event()
@@ -131,16 +157,16 @@ class TestRollout(AlchemyTestCase):
             def _run(cls, state, children):
                 wake_monitor_then_wait()
 
-        fn_run = create_task(rollout)
-        fn_wake_monitor_wait = create_task(rollout, WakeMonitorWaitTask)
-        fn_not_called = create_task(rollout)
-        root = create_task(rollout, SequentialExecTask, [fn_run, fn_wake_monitor_wait, fn_not_called])
+        task_run = create_task(rollout)
+        task_wake_monitor_wait = create_task(rollout, WakeMonitorWaitTask)
+        task_not_called = create_task(rollout)
+        root = create_task(rollout, SequentialExecTask, [task_run, task_wake_monitor_wait, task_not_called])
 
         rollout.rollout()
 
-        self.assertRun(fn_run)
-        self.assertRun(fn_wake_monitor_wait)
-        self.assertNotRun(fn_not_called)
+        self.assertRun(task_run)
+        self.assertRun(task_wake_monitor_wait)
+        self.assertNotRun(task_not_called)
         self.assertEqual(MonitoredRollout.rollback_calls, [rollout])
-        self.assertRollback(fn_run)
-        self.assertRollback(fn_wake_monitor_wait)
+        self.assertRollback(task_run)
+        self.assertRollback(task_wake_monitor_wait)

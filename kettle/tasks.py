@@ -78,8 +78,6 @@ class Task(Base):
     rollout = relationship('Rollout', backref=backref('tasks', order_by=id))
     children = relationship('Task', backref=backref('parent', remote_side='Task.id', order_by=id))
 
-    run = action_fn('run')
-    rollback = action_fn('rollback')
 
     @declared_attr
     def __mapper_args__(cls):
@@ -93,6 +91,14 @@ class Task(Base):
         self.rollout_id = rollout_id
         self.state = {}
         self._init(*args, **kwargs)
+
+    run = action_fn('run')
+    __rollback = action_fn('rollback')
+
+    def rollback(self):
+        if not self.run_start_dt:
+            raise Exception('Cannot rollback before running')
+        self.__rollback()
 
     def call_and_record_action(self, action):
         setattr(self, '%s_start_dt' % (action,), datetime.now())
@@ -195,7 +201,7 @@ class ExecTask(Task):
 
     @classmethod
     def _rollback(cls, state, children):
-        cls.execute(state, children)
+        pass
 
     @staticmethod
     def get_abort_signal(tasks):

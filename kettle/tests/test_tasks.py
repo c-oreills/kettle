@@ -113,6 +113,6 @@ class TestTask(AlchemyTestCase):
                 return _run_mock(cls, state)
 
         task = RunlessTask(self.rollout_id)
-        task.rollback()
+        self.assertRaises(task.rollback)
 
         _run_mock.assert_not_called()
