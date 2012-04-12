@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship, backref
 
 from db import Base, session
 from db.fields import JSONEncodedDict
-from log_utils import log_filename
+from log_utils import log_filename, get_thread_handlers
 from thread_utils import make_exec_threaded, thread_wait
 
 def action_fn(action):

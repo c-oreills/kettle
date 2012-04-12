@@ -37,6 +37,7 @@ def make_exec_threaded(method_name):
         thread = FailingThread(target=thread_wrapped_task, name=instance.__class__.__name__)
         thread.start()
         return thread
+    return _exec_threaded
 
 def thread_wait(thread, abort_event):
     try:
