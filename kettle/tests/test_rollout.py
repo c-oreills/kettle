@@ -54,6 +54,27 @@ class TestRollout(AlchemyTestCase):
         rollout = Rollout({})
         rollout.save()
 
+    def test_generate_tasks_clears(self):
+        class GenTasksRollout(Rollout):
+            def _generate_tasks(self):
+                create_task(self)
+
+        rollout = GenTasksRollout({})
+        rollout.save()
+
+        rollout.generate_tasks()
+        self.assertEqual(len(rollout.tasks), 1)
+        rollout.generate_tasks()
+        self.assertEqual(len(rollout.tasks), 1)
+
+    def test_generate_tasks_after_run(self):
+        rollout = Rollout({})
+        rollout.save()
+        create_task(rollout)
+        rollout.rollout()
+
+        self.assertRaises(rollout.generate_tasks)
+
     def test_single_task_rollout(self):
         rollout = Rollout({})
         rollout.save()

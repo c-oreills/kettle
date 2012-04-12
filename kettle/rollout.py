@@ -118,6 +118,11 @@ class Rollout(Base):
         session.Session.commit()
 
     def generate_tasks(self):
+        if self.rollout_start_dt:
+            raise Exception('Cannot generate tasks after rollout has started')
+        # Clear any previous tasks
+        map(session.Session.delete, self.tasks)
+        session.Session.commit()
         self._generate_tasks()
         self.generate_tasks_dt = datetime.now()
 
