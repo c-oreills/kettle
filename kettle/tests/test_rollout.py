@@ -37,19 +37,19 @@ class TestRollout(AlchemyTestCase):
 
     def assertRun(self, task):
         if (task.id, 'run') not in calls:
-            raise AssertionError('task %s (%s) has not been run' % (task.id, task))
+            raise AssertionError('%s has not been run' % (task,))
 
     def assertNotRun(self, task):
         if (task.id, 'run') in calls:
-            raise AssertionError('task %s (%s) has been run' % (task.id, task))
+            raise AssertionError('%s has been run' % (task,))
 
     def assertRollback(self, task):
         if (task.id, 'rollback') not in calls:
-            raise AssertionError('task %s (%s) has not been rolled back' % (task.id, task))
+            raise AssertionError('%s has not been rolled back' % (task,))
 
     def assertNotRollback(self, task):
         if (task.id, 'rollback') in calls:
-            raise AssertionError('task %s (%s) has been rolled back' % (task.id, task))
+            raise AssertionError('%s has been rolled back' % (task,))
 
     def test_init(self):
         rollout = Rollout({})
@@ -68,12 +68,20 @@ class TestRollout(AlchemyTestCase):
 
         rollout.rollout()
 
-        for task in fn1, fn2, fn3, fn4, parent1, parent2, root:
+        # Do not assert parents or root is run since otherwise we'd have to
+        # override their call methods
+        for task in fn1, fn2, fn3, fn4:
             self.assertRun(task)
 
-    @patch('kettle.rollout.Rollout.rollback')
-    def test_quit_and_rollback_on_failure(self, rollback):
-        rollout = Rollout({})
+    def test_quit_and_rollback_on_failure(self):
+        class RecordedRollout(Rollout):
+            rollback_calls = []
+
+            def rollback(self):
+                self.rollback_calls.append(self)
+                super(RecordedRollout, self).rollback()
+
+        rollout = RecordedRollout({})
         rollout.save()
         fn1 = create_task(rollout)
         fn_error = create_task(rollout, TestTaskFail)
@@ -85,14 +93,12 @@ class TestRollout(AlchemyTestCase):
         self.assertRun(fn_error)
         self.assertNotRun(fn2)
 
-        self.assertTrue(rollback.called)
+        self.assertEqual(RecordedRollout.rollback_calls, [rollout])
 
         self.assertRollback(fn_error)
         self.assertRollback(fn1)
     
-    @patch('kettle.rollout.Rollout.save') # Inline functions break pickle
-    @patch('kettle.rollout.Rollout.rollback')
-    def test_monitor_rolls_back(self, rollback, save):
+    def test_monitor_rolls_back(self):
         monitor_wake_event = Event()
         finish_step_event = Event()
 
@@ -101,24 +107,29 @@ class TestRollout(AlchemyTestCase):
             abort_event.set()
             finish_step_event.set()
 
+
         class MonitoredRollout(Rollout):
             monitors = {
                     'mon': monitor,
                     }
+            rollback_calls = []
+
+            def rollback(self):
+                self.rollback_calls.append(self)
+                super(MonitoredRollout, self).rollback()
 
         rollout = MonitoredRollout({'monitors': ['mon']})
         rollout.save()
 
+        def wake_monitor_then_wait():
+            monitor_wake_event.set()
+            finish_step_event.wait()
+            self.assertFalse(MonitoredRollout.rollback_calls)
+
         class WakeMonitorWaitTask(TestTask):
             @classmethod
             def _run(cls, state, children):
-                cls.wake_monitor_then_wait()
-
-            @staticmethod
-            def wake_monitor_then_wait():
-                monitor_wake_event.set()
-                finish_step_event.wait()
-                self.assertFalse(rollback.called)
+                wake_monitor_then_wait()
 
         fn_run = create_task(rollout)
         fn_wake_monitor_wait = create_task(rollout, WakeMonitorWaitTask)
@@ -130,4 +141,6 @@ class TestRollout(AlchemyTestCase):
         self.assertRun(fn_run)
         self.assertRun(fn_wake_monitor_wait)
         self.assertNotRun(fn_not_called)
-        self.assertTrue(rollback.called)
+        self.assertEqual(MonitoredRollout.rollback_calls, [rollout])
+        self.assertRollback(fn_run)
+        self.assertRollback(fn_wake_monitor_wait)

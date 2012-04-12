@@ -1,3 +1,4 @@
+from logbook import TestHandler
 from sqlalchemy import create_engine
 from unittest import TestCase
 
@@ -11,6 +12,10 @@ create_all(engine)
 
 class AlchemyTestCase(TestCase):
     def _pre_setup(self):
+        # set up logging # TODO: Make this actually work
+        self.log_handler = TestHandler()
+        self.log_handler.push_thread()
+
         # connect to the database
         self.connection = engine.connect()
 
@@ -49,3 +54,6 @@ class AlchemyTestCase(TestCase):
         # calls to commit()) is rolled back.
         self.trans.rollback()
         self.connection.close()
+
+        # tear down logging
+        self.log_handler.pop_thread()

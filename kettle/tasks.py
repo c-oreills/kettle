@@ -35,7 +35,9 @@ def thread_wait(thread, abort_event):
             else:
                 break
     except Exception:
+        # TODO: Fix logging
         print traceback.format_exc()
+        logbook.exception()
         abort_event.set()
 
 
@@ -64,14 +66,14 @@ class Task(Base):
     run_error_dt = Column(DateTime)
     run_return = Column(String(500))
     run_return_dt = Column(DateTime)
-    run_traceback = Column(String(500))
+    run_traceback = Column(String(1000))
 
     rollback_start_dt = Column(DateTime)
     rollback_error = Column(String(500))
     rollback_error_dt = Column(DateTime)
     rollback_return = Column(String(500))
     rollback_return_dt = Column(DateTime)
-    rollback_traceback = Column(String(500))
+    rollback_traceback = Column(String(1000))
 
     rollout = relationship('Rollout', backref=backref('tasks', order_by=id))
     children = relationship('Task', backref=backref('parent', remote_side='Task.id', order_by=id))
@@ -134,9 +136,8 @@ class Task(Base):
         pass
 
     def __repr__(self):
-        return '%s(%s, %s)' % (
-                self.__class__.__name__, self.rollout_id,
-                ', '.join(['%s=%s' % (k, v) for k, v in self.state.iteritems()]))
+        return '<%s: id=%s, rollout_id=%s, state=%s>' % (
+                self.__class__.__name__, self.id, self.rollout_id, repr(self.state))
 
     def friendly_str(self):
         return repr(self)
@@ -161,13 +162,17 @@ class Task(Base):
 
     def run_threaded(self, abort_event):
         outer_handlers = get_thread_handlers()
+        task_id = self.id
         def thread_wrapped_task():
             with inner_thread_nested_setup(outer_handlers):
                 try:
-                    self.run()
+                    # Reload from db
+                    task = session.Session.query(Task).filter_by(id=task_id).one()
+                    task.run()
                 except Exception:
-                    # TODO: Check Log
-                    logbook.info(traceback.format_exc())
+                    # TODO: Fix logging
+                    print traceback.format_exc()
+                    logbook.exception()
                     abort_event.set()
         thread = FailingThread(target=thread_wrapped_task, name=self.__class__.__name__)
         thread.start()
