@@ -1,3 +1,8 @@
+body {
+    font-family: sans-serif;
+    background-color: #aac;
+}
+
 .finished {
     font-style: italic;
     color: #448844;
@@ -23,17 +28,40 @@
     color: #ff0000;
 }
 
-#header {
+#header, #content, #footer {
     width: 800px;
     margin-right: auto;
     margin-left: auto;
+}
+
+#header {
     padding: 10px 10px 20px 10px;
+    border: 1px solid #444;
+    background-color: #fff;
+    padding: 25px;
 }
 
 #content {
-    width: 800px;
-    margin-right: auto;
-    margin-left: auto;
+    border: 1px solid #444;
+    border-top: none;
+    background-color: #eef;
+    padding: 25px;
+    padding-top: 1px;
+}
+
+#footer {
+    padding: 25px;
+    padding-top: 1px;
+    font-size: 10px;
+    text-align: center;
+}
+
+#content > ul > li {
+    list-style: none;
+}
+
+li {
+    padding-bottom: 2px;
 }
 
 #flash {
@@ -46,4 +74,9 @@
     color: #ff0000;
     font-size: x-large;
     font-weight: bold;
+}
+
+.new-rollout-button {
+    font-weight: bold;
+    color: blue;
 }
