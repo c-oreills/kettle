@@ -4,15 +4,10 @@ from mock import patch, Mock
 
 from kettle.db import session
 from kettle.rollout import Rollout
-from kettle.tasks import Task
-from kettle.tests import AlchemyTestCase
+from kettle.tasks import Task, DelayTask
+from kettle.tests import KettleTestCase, TestTask, create_task
 
-class BasicTask(Task):
-    pass
-
-class TestTask(AlchemyTestCase):
-    # Task must be subclassed in order to save
-
+class TestTasks(KettleTestCase):
     def setUp(self):
         self.rollout = Rollout({})
         self.rollout.save()
@@ -20,9 +15,9 @@ class TestTask(AlchemyTestCase):
 
     @patch('kettle.tasks.Task._init')
     def test_init(self, _init):
-        task = BasicTask(self.rollout_id)
+        task = TestTask(self.rollout_id)
         self.assertEqual(task.rollout_id, self.rollout_id)
-        self.assertTrue(BasicTask._init.called)
+        self.assertTrue(TestTask._init.called)
 
     def test_state(self):
         class StateTask(Task):
@@ -39,7 +34,7 @@ class TestTask(AlchemyTestCase):
         self.assertEqual(task.state['pie'], 'a lie')
 
     def test_no_rollout_id(self):
-        task = BasicTask(None)
+        task = TestTask(None)
         self.assertRaises(Exception, task.save)
 
     def test_run(self):
@@ -103,7 +98,7 @@ class TestTask(AlchemyTestCase):
         self.assertIn('broken', task.run_traceback)
 
     def test_run_twice(self):
-        task = BasicTask(self.rollout_id)
+        task = TestTask(self.rollout_id)
 
         task.run()
         self.assertRaises(Exception, task.run)
@@ -121,3 +116,18 @@ class TestTask(AlchemyTestCase):
         self.assertRaises(Exception, task.revert)
 
         _run_mock.assert_not_called()
+
+class TestDelayTask(KettleTestCase):
+    def setUp(self):
+        self.rollout = Rollout({})
+        self.rollout.save()
+        self.rollout_id = self.rollout.id
+
+    def test_abort_fast(self):
+        create_task(self.rollout, DelayTask, minutes=2)
+        #self.rollout.rollout_async()
+        #self.rollout = Rollout._from_id(self.rollout_id)
+        #self.rollout.abort('rollout')
+        #self.rollout = Rollout._from_id(self.rollout_id)
+        #import ipdb; ipdb.set_trace()
+        #self.assertTrue(self.rollout.rollout_finish_dt)

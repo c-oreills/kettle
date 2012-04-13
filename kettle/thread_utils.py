@@ -4,7 +4,6 @@ import traceback
 
 import logbook
 
-from db import session
 from log_utils import get_thread_handlers, inner_thread_nested_setup
 
 class ExcRecordingThread(Thread):
@@ -29,7 +28,7 @@ def make_exec_threaded(method_name):
                 try:
                     # Reload from db
                     from kettle.tasks import Task
-                    task = session.Session.query(Task).filter_by(id=task_id).one()
+                    task = Task._from_id(task_id)
                     getattr(task, method_name)()
                 except Exception:
                     # TODO: Fix logging

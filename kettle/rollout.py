@@ -36,7 +36,16 @@ class Rollout(Base):
     def __init__(self, config):
         self.config = config
 
+    @classmethod
+    def _from_id(cls, id):
+        return session.Session.query(cls).filter_by(id=id).one()
+
     def rollout(self):
+        self._rollout(self.id)
+
+    @classmethod
+    def _rollout(cls, id):
+        self = cls._from_id(id)
         if not self.root_task:
             raise Exception('No root task to rollout')
 
@@ -99,6 +108,7 @@ class Rollout(Base):
         session.Session.remove()
         rollout_thread = Thread(target=self.rollout)
         rollout_thread.start()
+        return rollout_thread
 
     def start_monitoring(self):
         monitoring = self.signal('monitoring')
@@ -213,36 +223,39 @@ class Rollout(Base):
         del self.signals[self.id][signal_name]
 
     def abort(self, action):
-        return self._do_signal('abort_%s' % action)
+        return self._do_signal(self.id, 'abort_%s' % action)
 
     def can_abort(self, action):
-        return self._can_signal('abort_%s' % action)
+        return self._can_signal(self.id, 'abort_%s' % action)
 
     def is_aborting(self, action):
-        return self._is_signalling('abort_%s' % action)
+        return self._is_signalling(self.id, 'abort_%s' % action)
 
     def term(self, action):
-        return self._do_signal('term_%s' % action)
+        return self._do_signal(self.id, 'term_%s' % action)
 
     def can_term(self, action):
-        return self._can_signal('term_%s' % action)
+        return self._can_signal(self.id, 'term_%s' % action)
 
     def is_terming(self, action):
-        return self._is_signalling('term_%s' % action)
+        return self._is_signalling(self.id, 'term_%s' % action)
 
-    def _do_signal(self, signal_name):
-        if not self._can_signal(signal_name):
+    @classmethod
+    def _do_signal(cls, id, signal_name):
+        if not cls._can_signal(id, signal_name):
             return False
-        signal = self.get_signal(signal_name)
+        signal = cls.signal(id, signal_name)
         signal.set()
         return True
 
-    def _can_signal(self, signal_name):
-        signal = self.get_signal(signal_name)
+    @classmethod
+    def _can_signal(cls, id, signal_name):
+        signal = cls.signal(id, signal_name)
         return signal and not signal.is_set()
 
-    def _is_signalling(self, signal_name):
-        signal = self.get_signal(signal_name)
+    @classmethod
+    def _is_signalling(cls, id, signal_name):
+        signal = cls.get_signal(id, signal_name)
         return signal and signal.is_set()
 
     def _setup_signals_rollout(self):

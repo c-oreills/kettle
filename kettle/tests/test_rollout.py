@@ -2,18 +2,7 @@ from threading import Event
 
 from kettle.rollout import Rollout
 from kettle.tasks import ParallelExecTask, SequentialExecTask, Task
-from kettle.tests import AlchemyTestCase
-
-calls = []
-
-class TestTask(Task):
-    def run(self):
-        calls.append((self.id, 'run'))
-        super(TestTask, self).run()
-
-    def revert(self):
-        calls.append((self.id, 'revert'))
-        super(TestTask, self).revert()
+from kettle.tests import KettleTestCase, create_task, TestTask
 
 
 class TestTaskFail(TestTask):
@@ -21,35 +10,7 @@ class TestTaskFail(TestTask):
     def _run(cls, state, children, abort, term):
         raise Exception
 
-
-def create_task(rollout, task_cls=None, *args):
-    if task_cls is None:
-        task_cls = TestTask
-    task = task_cls(rollout.id, *args)
-    task.save()
-    return task
-
-
-class TestRollout(AlchemyTestCase):
-    def tearDown(self):
-        del calls[:]
-
-    def assertRun(self, task):
-        if (task.id, 'run') not in calls:
-            raise AssertionError('%s has not been run' % (task,))
-
-    def assertNotRun(self, task):
-        if (task.id, 'run') in calls:
-            raise AssertionError('%s has been run' % (task,))
-
-    def assertReverted(self, task):
-        if (task.id, 'revert') not in calls:
-            raise AssertionError('%s has not been reverted' % (task,))
-
-    def assertNotReverted(self, task):
-        if (task.id, 'revert') in calls:
-            raise AssertionError('%s has been reverted' % (task,))
-
+class TestRollout(KettleTestCase):
     def test_init(self):
         rollout = Rollout({})
         rollout.save()

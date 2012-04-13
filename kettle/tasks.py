@@ -63,6 +63,10 @@ class Task(Base):
         self.state = {}
         self._init(*args, **kwargs)
 
+    @classmethod
+    def _from_id(cls, id):
+        return session.Session.query(cls).filter_by(id=id).one()
+
     def _init(self, *args, **kwargs):
         pass
 
@@ -212,7 +216,7 @@ class SequentialExecTask(ExecTask):
     def exec_tasks(method_name, task_order, tasks, abort, term):
         task_ids = {task.id: task for task in tasks}
         for task_id in task_order:
-            if abort.is_set() and 'revert' not in method_name:
+            if abort.is_set() or term.is_set():
                 break
             task = task_ids.pop(task_id)
             thread = getattr(task, method_name)(abort)
@@ -265,15 +269,15 @@ class DelayTask(Task):
 
     @classmethod
     def _run(cls, state, children, abort, term):
-        cls.wait(mins=state['minutes'])
+        cls.wait(mins=state['minutes'], abort=abort, term=term)
 
     @classmethod
     def _revert(cls, state, children, abort, term):
         if state['reversible']:
-            cls.wait(mins=state['minutes'])
+            cls.wait(mins=state['minutes'], abort=abort, term=term)
 
     @staticmethod
-    def wait(mins):
+    def wait(mins, abort, term):
         logbook.info('Waiting for %sm' % (mins,),)
         sleep(mins*60)
 
