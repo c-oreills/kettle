@@ -28,7 +28,7 @@ class Task(Base):
     __tablename__ = 'task'
     id = Column(Integer, primary_key=True)
     type = Column(String(50), nullable=False)
-    rollout_id = Column(Integer, ForeignKey('rollout.id'))
+    rollout_id = Column(Integer, ForeignKey('rollout.id'), nullable=False)
     parent_id = Column(Integer, ForeignKey('task.id'))
     state = Column(JSONEncodedDict(1000))
 

@@ -73,7 +73,7 @@ class TestRollout(AlchemyTestCase):
         create_task(rollout)
         rollout.rollout()
 
-        self.assertRaises(rollout.generate_tasks)
+        self.assertRaises(Exception, rollout.generate_tasks)
 
     def test_single_task_rollout(self):
         rollout = Rollout({})

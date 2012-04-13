@@ -7,10 +7,11 @@ from kettle.rollout import Rollout
 from kettle.tasks import Task
 from kettle.tests import AlchemyTestCase
 
+class BasicTask(Task):
+    pass
+
 class TestTask(AlchemyTestCase):
     # Task must be subclassed in order to save
-    class BasicTask(Task):
-        pass
 
     def setUp(self):
         self.rollout = Rollout({})
@@ -19,9 +20,9 @@ class TestTask(AlchemyTestCase):
 
     @patch('kettle.tasks.Task._init')
     def test_init(self, _init):
-        task = self.BasicTask(self.rollout_id)
+        task = BasicTask(self.rollout_id)
         self.assertEqual(task.rollout_id, self.rollout_id)
-        self.assertTrue(self.BasicTask._init.called)
+        self.assertTrue(BasicTask._init.called)
 
     def test_state(self):
         class StateTask(Task):
@@ -36,6 +37,10 @@ class TestTask(AlchemyTestCase):
 
         self.assertEqual(task.state['cake'], 'a pie')
         self.assertEqual(task.state['pie'], 'a lie')
+
+    def test_no_rollout_id(self):
+        task = BasicTask(None)
+        self.assertRaises(Exception, task.save)
 
     def test_run(self):
         # Datetime at 1 second resolution
@@ -98,7 +103,7 @@ class TestTask(AlchemyTestCase):
         self.assertIn('broken', task.run_traceback)
 
     def test_run_twice(self):
-        task = self.BasicTask(self.rollout_id)
+        task = BasicTask(self.rollout_id)
 
         task.run()
         self.assertRaises(Exception, task.run)
@@ -113,6 +118,6 @@ class TestTask(AlchemyTestCase):
                 return _run_mock(cls, state)
 
         task = RunlessTask(self.rollout_id)
-        self.assertRaises(task.revert)
+        self.assertRaises(Exception, task.revert)
 
         _run_mock.assert_not_called()
