@@ -45,7 +45,7 @@ def gradual_exec_generic(rollout_id, task_cls, delay_gen, args_kwargs_list, run_
         if len(tasks) <= 1:
             return tasks
         else:
-            return [(run_task_cls, (rollout_id, tasks,))]
+            return [run_task_cls(rollout_id, tasks)]
     steps = []
     for num in 'one', 'half', 'all':
         next_steps = make_steps_fn(num)
