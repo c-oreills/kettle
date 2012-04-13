@@ -7,14 +7,15 @@ import logbook
 from db import session
 from log_utils import get_thread_handlers, inner_thread_nested_setup
 
-class FailingThread(Thread):
+class ExcRecordingThread(Thread):
+    "Thread that catches exceptions and stores them to its exc_info attribute"
     def __init__(self, *args, **kwargs):
-        super(FailingThread, self).__init__(*args, **kwargs)
+        super(ExcRecordingThread, self).__init__(*args, **kwargs)
         self.exc_info = None
 
     def run(self):
         try:
-            super(FailingThread, self).run()
+            super(ExcRecordingThread, self).run()
         except Exception:
             self.exc_info = sys.exc_info()
 
@@ -35,7 +36,7 @@ def make_exec_threaded(method_name):
                     print traceback.format_exc()
                     logbook.exception()
                     abort_event.set()
-        thread = FailingThread(target=thread_wrapped_task, name=instance.__class__.__name__)
+        thread = ExcRecordingThread(target=thread_wrapped_task, name=instance.__class__.__name__)
         thread.start()
         return thread
     return _exec_threaded
