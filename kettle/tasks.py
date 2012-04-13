@@ -67,11 +67,11 @@ class Task(Base):
         pass
 
     @classmethod
-    def _run(cls, state, children):
+    def _run(cls, state, children, abort, term):
         pass
 
     @classmethod
-    def _revert(cls, state, children):
+    def _revert(cls, state, children, abort, term):
         pass
 
     run = action_fn('run')
@@ -85,6 +85,16 @@ class Task(Base):
     run_threaded = make_exec_threaded('run')
     revert_threaded = make_exec_threaded('revert')
 
+    def get_signals(self, action):
+        from rollout import Rollout
+        signal_action = {'run': 'rollout', 'revert': 'rollback'}[action]
+        abort_signal = Rollout.get_signal(self.rollout_id, 'abort_%s' % signal_action)
+        term_signal = Rollout.get_signal(self.rollout_id, 'term_%s' % signal_action)
+        if not abort_signal and term_signal:
+            raise Exception('Cannot run: one or more signals don\'t exist: '
+                    'abort: %s, term: %s' % (abort_signal, term_signal))
+        return abort_signal, term_signal
+
     def call_and_record_action(self, action):
         setattr(self, '%s_start_dt' % (action,), datetime.now())
         self.save()
@@ -92,7 +102,8 @@ class Task(Base):
         action_fn = getattr(type(self), '_%s' % (action,))
         try:
             with self.log_setup_action(action):
-                action_return = action_fn(self.state, self.children)
+                abort, term = self.get_signals(action)
+                action_return = action_fn(self.state, self.children, abort, term)
         except Exception, e:
             setattr(self, '%s_error' % (action,), e.message)
             setattr(self, '%s_traceback' % (action,), repr(traceback.format_exc()))
@@ -164,19 +175,12 @@ class ExecTask(Task):
             child.save()
 
     @classmethod
-    def _run(cls, state, children):
-        cls.exec_forwards(state, children)
+    def _run(cls, state, children, abort, term):
+        cls.exec_forwards(state, children, abort, term)
 
     @classmethod
-    def _revert(cls, state, children):
-        cls.exec_backwards(state, children)
-
-    @staticmethod
-    def get_abort_signal(tasks):
-        from kettle.rollout import Rollout
-        rollout_id, = set(task.rollout_id for task in tasks)
-        abort = Rollout.abort_signals.get(rollout_id)
-        return abort
+    def _revert(cls, state, children, abort, term):
+        cls.exec_backwards(state, children, abort, term)
 
     def friendly_str(self):
         return '%s%s' %\
@@ -194,19 +198,18 @@ class SequentialExecTask(ExecTask):
         self.state['task_order'] = [child.id for child in children]
 
     @classmethod
-    def exec_forwards(cls, state, tasks):
-        cls.exec_tasks('run_threaded', state['task_order'], tasks)
+    def exec_forwards(cls, state, tasks, abort, term):
+        cls.exec_tasks('run_threaded', state['task_order'], tasks, abort, term)
 
     @classmethod
-    def exec_backwards(cls, state, tasks):
+    def exec_backwards(cls, state, tasks, abort, term):
         run_tasks = [t for t in tasks if t.run_start_dt]
         run_task_ids = set(t.id for t in run_tasks)
         task_order = [t_id for t_id in reversed(state['task_order']) if t_id in run_task_ids]
-        cls.exec_tasks('revert_threaded', task_order, run_tasks)
+        cls.exec_tasks('revert_threaded', task_order, run_tasks, abort, term)
 
-    @classmethod
-    def exec_tasks(cls, method_name, task_order, tasks):
-        abort = cls.get_abort_signal(tasks)
+    @staticmethod
+    def exec_tasks(method_name, task_order, tasks, abort, term):
         task_ids = {task.id: task for task in tasks}
         for task_id in task_order:
             if abort.is_set() and 'revert' not in method_name:
@@ -233,17 +236,17 @@ class ParallelExecTask(ExecTask):
     desc_string = 'Execute in parallel:'
 
     @classmethod
-    def exec_forwards(cls, state, tasks):
-        cls.exec_tasks('run_threaded', tasks)
+    def exec_forwards(cls, state, tasks, abort, term):
+        cls.exec_tasks('run_threaded', tasks, abort, term)
 
     @classmethod
-    def exec_backwards(cls, state, tasks):
-        cls.exec_tasks('revert_threaded', [t for t in tasks if t.run_start_dt])
+    def exec_backwards(cls, state, tasks, abort, term):
+        cls.exec_tasks('revert_threaded', [t for t in tasks if t.run_start_dt],
+                abort, term)
 
-    @classmethod
-    def exec_tasks(cls, method_name, tasks):
+    @staticmethod
+    def exec_tasks(method_name, tasks, abort, term):
         threads = []
-        abort = cls.get_abort_signal(tasks)
         for task in tasks:
             thread = getattr(task, method_name)(abort)
             threads.append(thread)
@@ -261,11 +264,11 @@ class DelayTask(Task):
                 reversible=reversible)
 
     @classmethod
-    def _run(cls, state, children):
+    def _run(cls, state, children, abort, term):
         cls.wait(mins=state['minutes'])
 
     @classmethod
-    def _revert(cls, state, children):
+    def _revert(cls, state, children, abort, term):
         if state['reversible']:
             cls.wait(mins=state['minutes'])
 

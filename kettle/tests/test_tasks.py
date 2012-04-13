@@ -49,8 +49,8 @@ class TestTask(AlchemyTestCase):
 
         class RunTask(Task):
             @classmethod
-            def _run(cls, state, children):
-                return _run_mock(cls, state, children)
+            def _run(cls, state, children, abort, term):
+                return _run_mock(cls, state, children, abort, term)
 
         task = RunTask(self.rollout_id)
 
@@ -63,7 +63,7 @@ class TestTask(AlchemyTestCase):
 
         task.run()
 
-        _run_mock.assert_called_once_with(RunTask, task.state, task.children)
+        _run_mock.assert_called_once_with(RunTask, task.state, task.children, None, None)
 
         self.assertGreaterEqual(task.run_start_dt, start)
         self.assertEqual(task.run_error, None)
@@ -79,7 +79,7 @@ class TestTask(AlchemyTestCase):
 
         class RunTaskFail(Task):
             @classmethod
-            def _run(cls, state, children):
+            def _run(cls, state, children, abort, term):
                 return _run_mock(cls, state, children)
 
         task = RunTaskFail(self.rollout_id)
@@ -109,13 +109,13 @@ class TestTask(AlchemyTestCase):
         self.assertRaises(Exception, task.run)
 
     def test_revert_before_run(self):
-        # Reverting without running is valid
+        # Reverting without running is not valid
         _run_mock = Mock()
 
         class RunlessTask(Task):
             @classmethod
-            def _run(cls, state):
-                return _run_mock(cls, state)
+            def _run(cls, state, children, abort, term):
+                return _run_mock(cls, state, children, abort, term)
 
         task = RunlessTask(self.rollout_id)
         self.assertRaises(Exception, task.revert)

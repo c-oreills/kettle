@@ -21,7 +21,7 @@ class ExcRecordingThread(Thread):
 
 
 def make_exec_threaded(method_name):
-    def _exec_threaded(instance, abort_event):
+    def _exec_threaded(instance, abort):
         outer_handlers = get_thread_handlers()
         task_id = instance.id
         def thread_wrapped_task():
@@ -35,16 +35,16 @@ def make_exec_threaded(method_name):
                     # TODO: Fix logging
                     print traceback.format_exc()
                     logbook.exception()
-                    abort_event.set()
+                    abort.set()
         thread = ExcRecordingThread(target=thread_wrapped_task, name=instance.__class__.__name__)
         thread.start()
         return thread
     return _exec_threaded
 
-def thread_wait(thread, abort_event):
+def thread_wait(thread, abort):
     try:
         while True:
-            if abort_event.is_set():
+            if abort.is_set():
                 pass # TODO: Set some kinda timeout
             if thread.is_alive():
                 thread.join(1)
@@ -54,4 +54,4 @@ def thread_wait(thread, abort_event):
         # TODO: Fix logging
         print traceback.format_exc()
         logbook.exception()
-        abort_event.set()
+        abort.set()

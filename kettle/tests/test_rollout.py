@@ -18,7 +18,7 @@ class TestTask(Task):
 
 class TestTaskFail(TestTask):
     @classmethod
-    def _run(cls, state, children):
+    def _run(cls, state, children, abort, term):
         raise Exception
 
 
@@ -176,7 +176,7 @@ class TestRollout(AlchemyTestCase):
 
         class WakeMonitorWaitTask(TestTask):
             @classmethod
-            def _run(cls, state, children):
+            def _run(cls, state, children, abort, term):
                 wake_monitor_then_wait()
 
         task_run = create_task(rollout)

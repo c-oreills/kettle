@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from threading import Event, Thread
 
@@ -8,6 +9,10 @@ from db import Base, session
 from db.fields import JSONEncodedDict
 from log_utils import log_filename
 from tasks import thread_wait
+
+ROLLOUT_SIGNALS = ('abort_rollout', 'term_rollout', 'monitoring')
+ROLLBACK_SIGNALS = ('abort_rollback', 'term_rollback')
+ALL_SIGNALS = ROLLOUT_SIGNALS + ROLLBACK_SIGNALS
 
 class Rollout(Base):
     __tablename__ = 'rollout'
@@ -26,7 +31,7 @@ class Rollout(Base):
     rollback_finish_dt = Column(DateTime)
     
     monitors = {}
-    abort_signals = {}
+    signals = defaultdict(dict)
 
     def __init__(self, config):
         self.config = config
@@ -39,20 +44,19 @@ class Rollout(Base):
             raise Exception('Rollout already started at %s' % 
                     (self.rollout_start_dt))
 
-        self.aborting = Event()
-        self.monitoring = Event()
         self.rollout_start_dt = datetime.now()
         self.save()
-        self.abort_signals[self.id] = self.aborting
+        self._setup_signals_rollout()
 
         self.root_task # Check root task exists before starting
 
         self.start_monitoring()
         try:
             with self.log_setup_rollout():
-                task_thread = self.root_task.run_threaded(self.aborting)
-                thread_wait(task_thread, self.aborting)
-            if self.aborting.is_set():
+                abort_rollout = self.signal('abort_rollout')
+                task_thread = self.root_task.run_threaded(abort_rollout)
+                thread_wait(task_thread, abort_rollout)
+            if abort_rollout.is_set():
                 if not self.rollout_finish_dt:
                     self.rollout_finish_dt = datetime.now()
                     self.save()
@@ -61,8 +65,20 @@ class Rollout(Base):
             self.stop_monitoring()
             if not self.rollout_finish_dt:
                 self.rollout_finish_dt = datetime.now()
-            self.abort_signals.pop(self.id)
+            self._teardown_signals_rollout()
             self.save()
+
+    def rollback(self):
+        self.rollback_start_dt = datetime.now()
+        self.save()
+        self._setup_signals_rollback()
+
+        with self.log_setup_rollback():
+            self.root_task.revert()
+
+        self.rollback_finish_dt = datetime.now()
+        self._teardown_signals_rollback()
+        self.save()
 
     @property
     def root_task(self):
@@ -85,32 +101,24 @@ class Rollout(Base):
         rollout_thread.start()
 
     def start_monitoring(self):
-        if self.monitoring.is_set():
+        monitoring = self.signal('monitoring')
+        if monitoring.is_set():
             return 
 
-        self.monitoring.set()
+        monitoring.set()
 
         monitors = [v for k, v in self.monitors.iteritems() 
                 if k in self.config.get('monitors', [])]
         for monitor in monitors:
             thread = Thread(
-                    target=monitor, args=(self.monitoring, self.aborting),
+                    target=monitor, args=(monitoring, self.signal('abort_rollout')),
                     name='monitor: %s' % monitor.__name__)
             thread.daemon = True
             thread.start()
 
     def stop_monitoring(self):
-        self.monitoring.clear()
-
-    def rollback(self):
-        self.rollback_start_dt = datetime.now()
-        self.save()
-
-        with self.log_setup_rollback():
-            self.root_task.revert()
-
-        self.rollback_finish_dt = datetime.now()
-        self.save()
+        monitoring = self.signal('monitoring')
+        monitoring.clear()
 
     def save(self):
         if self not in session.Session:
@@ -130,31 +138,34 @@ class Rollout(Base):
         pass # Override
 
     def status(self):
-        if self.is_aborting:
-            return 'aborting'
         if not self.rollout_start_dt:
             return 'not_started'
 
         if not self.rollback_start_dt:
+            if self.is_terming('rollout'):
+                return 'terminating_rollout'
+            if self.is_aborting('rollout'):
+                return 'aborting_rollout'
             if not self.rollout_finish_dt:
                 return 'started'
             else:
                 return 'finished'
         else:
+            if self.is_terming('rollback'):
+                return 'terminating_rollback'
+            if self.is_aborting('rollback'):
+                return 'aborting_rollback'
             if not self.rollback_finish_dt:
                 return 'rolling_back'
             else:
                 return 'rolled_back'
 
     def friendly_status(self):
+        status = self.status()
         return {
-                'aborting': 'Aborting',
-                'not_started': 'Not started',
                 'started': 'Started at %s' % self.rollout_start_dt,
-                'finished': 'Finished',
                 'rolling_back': 'Rolling back at %s' % self.rollback_start_dt,
-                'rolled_back': 'Rolled back',
-                }[self.status()]
+                }.get(status, status.title().replace('_', ' '))
 
     def friendly_status_html(self):
         return '<span id="rollout_{id}_status" class="status {status}">{friendly_status}</span>'.format(
@@ -180,24 +191,71 @@ class Rollout(Base):
             else:
                 return 'Error: no start time, finished %s' % finish_dt
 
+    @staticmethod
+    def _check_signal_name(signal_name):
+        if signal_name not in ALL_SIGNALS:
+            raise Exception('Invalid signal name: %s' % signal_name)
+
     @classmethod
-    def abort(cls, id):
-        try:
-            cls.abort_signals[id].set()
-        except KeyError:
-            raise Exception('No abort signal found for rollout_id %s' % (id,))
+    def get_signal(cls, id, signal_name):
+        cls._check_signal_name(signal_name)
+        return cls.signals[id].get(signal_name)
 
-    @property
-    def abort_signal(self):
-        return Rollout.abort_signals.get(self.id)
+    def signal(self, signal_name):
+        return self.get_signal(self.id, signal_name)
 
-    @property
-    def can_abort(self):
-        return self.abort_signal and not self.abort_signal.is_set()
+    def _make_signal(self, signal_name):
+        self._check_signal_name(signal_name)
+        self.signals[self.id][signal_name] = Event()
 
-    @property
-    def is_aborting(self):
-        return self.abort_signal and self.abort_signal.is_set()
+    def _del_signal(self, signal_name):
+        self._check_signal_name(signal_name)
+        del self.signals[self.id][signal_name]
+
+    def abort(self, action):
+        return self._do_signal('abort_%s' % action)
+
+    def can_abort(self, action):
+        return self._can_signal('abort_%s' % action)
+
+    def is_aborting(self, action):
+        return self._is_signalling('abort_%s' % action)
+
+    def term(self, action):
+        return self._do_signal('term_%s' % action)
+
+    def can_term(self, action):
+        return self._can_signal('term_%s' % action)
+
+    def is_terming(self, action):
+        return self._is_signalling('term_%s' % action)
+
+    def _do_signal(self, signal_name):
+        if not self._can_signal(signal_name):
+            return False
+        signal = self.get_signal(signal_name)
+        signal.set()
+        return True
+
+    def _can_signal(self, signal_name):
+        signal = self.get_signal(signal_name)
+        return signal and not signal.is_set()
+
+    def _is_signalling(self, signal_name):
+        signal = self.get_signal(signal_name)
+        return signal and signal.is_set()
+
+    def _setup_signals_rollout(self):
+        map(self._make_signal, ROLLOUT_SIGNALS)
+
+    def _teardown_signals_rollout(self):
+        map(self._del_signal, ROLLOUT_SIGNALS)
+
+    def _setup_signals_rollback(self):
+        map(self._make_signal, ROLLBACK_SIGNALS)
+
+    def _teardown_signals_rollback(self):
+        map(self._del_signal, ROLLBACK_SIGNALS)
 
     @property
     def info_list(self):
