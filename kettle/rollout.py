@@ -38,7 +38,7 @@ class Rollout(Base):
 
     @classmethod
     def _from_id(cls, id):
-        return session.Session.query(cls).filter_by(id=id).one()
+        return session.Session.query(cls).get(id)
 
     def rollout(self):
         self._rollout(self.id)
@@ -250,7 +250,7 @@ class Rollout(Base):
 
     @classmethod
     def _can_signal(cls, id, signal_name):
-        signal = cls.signal(id, signal_name)
+        signal = cls.get_signal(id, signal_name)
         return signal and not signal.is_set()
 
     @classmethod

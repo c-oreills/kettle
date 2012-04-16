@@ -65,7 +65,7 @@ class Task(Base):
 
     @classmethod
     def _from_id(cls, id):
-        return session.Session.query(cls).filter_by(id=id).one()
+        return session.Session.query(cls).get(id)
 
     def _init(self, *args, **kwargs):
         pass
