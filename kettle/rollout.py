@@ -104,9 +104,9 @@ class Rollout(Base):
             return root_task
 
     def rollout_async(self):
-        # remove stops error caused by having rollout in multiple sessions
         rollout_id = self.id
-        session.Session.remove()
+        # expunge stops error caused by having rollout in multiple sessions
+        session.Session.expunge(self)
         rollout_thread = Thread(target=self._rollout, args=(rollout_id,))
         rollout_thread.start()
         return rollout_thread
@@ -245,7 +245,7 @@ class Rollout(Base):
     def _do_signal(cls, id, signal_name):
         if not cls._can_signal(id, signal_name):
             return False
-        signal = cls.signal(id, signal_name)
+        signal = cls.get_signal(id, signal_name)
         signal.set()
         return True
 

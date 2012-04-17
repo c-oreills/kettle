@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 
 from mock import patch, Mock
 
@@ -124,10 +125,25 @@ class TestDelayTask(KettleTestCase):
         self.rollout_id = self.rollout.id
 
     def test_abort_fast(self):
-        create_task(self.rollout, DelayTask, seconds=2)
-        #create_task(self.rollout)
+        create_task(self.rollout, DelayTask, seconds=15)
+
+        rollout2 = Rollout({})
+        rollout2.save()
+        create_task(rollout2, DelayTask, seconds=15)
+
         self.rollout.rollout_async()
+        rollout2.rollout_async()
+        time.sleep(0.5)
+        self.assertTrue(self.rollout.can_abort('rollout'))
         self.assertTrue(self.rollout.abort('rollout'))
         self.assertTrue(self.rollout.signal('abort_rollout').is_set())
+
+        self.assertTrue(rollout2.can_term('rollout'))
+        self.assertTrue(rollout2.term('rollout'))
+        self.assertTrue(rollout2.signal('term_rollout').is_set())
+        time.sleep(1)
         self.rollout = Rollout._from_id(self.rollout_id)
         self.assertTrue(self.rollout.rollout_finish_dt)
+
+        rollout2 = Rollout._from_id(rollout2.id)
+        self.assertTrue(rollout2.rollout_finish_dt)
