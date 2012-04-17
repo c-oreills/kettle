@@ -6,12 +6,21 @@ from flask import flash, Flask, request, render_template, redirect, Response, ur
 from kettle import settings
 from kettle.db import session, make_session
 from kettle.log_utils import log_filename
+from kettle.rollout import ALL_SIGNALS
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
 rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
 rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
 
+SIGNAL_LABELS = {sig: sig.replace('_', ' ').title() for sig in ALL_SIGNALS}
+
+def available_signals(rollout_id):
+    url = lambda sig: url_for('rollout_signal', rollout_id=rollout_id, signal_name=sig)
+    return {url(sig): sig_label for sig, sig_label in SIGNAL_LABELS.iteritems()
+            if rollout_cls._can_signal(rollout_id, sig)}
+
+app.jinja_env.globals['available_signals'] = available_signals
 
 @app.teardown_request
 def shutdown_session(exception=None):
@@ -47,10 +56,14 @@ def rollout_run(rollout_id):
         flash('Cannot run - finalised more than 5 minutes ago. Refinalise!')
     return redirect(url_for('rollout_view', rollout_id=rollout_id))
 
-@app.route('/rollout/<int:rollout_id>/abort/')
-def rollout_abort(rollout_id):
-    rollout_cls.abort(rollout_id)
-    flash('Aborted Rollout %s' % (rollout_id,))
+@app.route('/rollout/<int:rollout_id>/signal/<signal_name>')
+def rollout_signal(rollout_id, signal_name):
+    if rollout_cls.abort(rollout_id):
+        status = 'succeeded'
+    else:
+        status = 'failed'
+    flash('{label} {status} for Rollout {id}'.format(
+        label=SIGNAL_LABELS[signal_name], status=status, id=rollout_id))
     return redirect(url_for('rollout_view', rollout_id=rollout_id))
 
 @app.route('/rollout/<int:rollout_id>/hide/')

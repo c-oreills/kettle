@@ -21,10 +21,12 @@
     {% if not (rollout.rollout_start_dt or rollout.rollback_start_dt) %}
     <a href="{{ url_for('rollout_edit', rollout_id=rollout.id) }}">Edit</a>
     {% endif %}
-    {% if rollout.rollout_start_dt and not (rollout.rollout_finish_dt or rollout.rollback_start_dt) %}
-        {% if rollout.can_abort %}
-        <p><a href="{{ url_for('rollout_abort', rollout_id=rollout.id) }}" class="abort">Abort</a></p>
-        {% endif %}
+    {% if rollout.status not in ('not_started', 'finished', 'rolled_back') %}
+        {% for sig_url, sig_label in available_signals(rollout.id).iteritems() %}
+            <p><a href="{{ sig_url }}" class="signal">{{ sig_label }}</a></p>
+        {% else %}
+            <p>No signals available</p>
+        {% endfor %}
     <p><a href="" onclick="window.auto_refresh=false; return false;">Stop Autorefresh</a></p>
     {% endif %}
     <h3>Info</h3>
