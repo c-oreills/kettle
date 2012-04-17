@@ -66,16 +66,12 @@ class Rollout(Base):
                 task_thread = self.root_task.run_threaded(abort_rollout)
                 thread_wait(task_thread, abort_rollout)
             if abort_rollout.is_set():
-                if not self.rollout_finish_dt:
-                    self.rollout_finish_dt = datetime.now()
-                    self.save()
+                self._update_rollout_finish_dt()
                 self.rollback()
         finally:
             self.stop_monitoring()
-            if not self.rollout_finish_dt:
-                self.rollout_finish_dt = datetime.now()
+            self._update_rollout_finish_dt()
             self._teardown_signals_rollout()
-            self.save()
 
     def rollback(self):
         self.rollback_start_dt = datetime.now()
@@ -86,8 +82,8 @@ class Rollout(Base):
             self.root_task.revert()
 
         self.rollback_finish_dt = datetime.now()
-        self._teardown_signals_rollback()
         self.save()
+        self._teardown_signals_rollback()
 
     @property
     def root_task(self):
@@ -270,6 +266,11 @@ class Rollout(Base):
 
     def _teardown_signals_rollback(self):
         map(self._del_signal, ROLLBACK_SIGNALS)
+
+    def _update_rollout_finish_dt(self):
+        if not self.rollout_finish_dt:
+            self.rollout_finish_dt = datetime.now()
+            self.save()
 
     @property
     def info_list(self):
