@@ -28,8 +28,8 @@ ROLLOUT_CLS = None
 
 ROLLOUT_FORM_CLS = None
 
-#ENGINE_STRING = 'sqlite:////tmp/kettle.sqlite'
-ENGINE_STRING = 'mysql://root@localhost/kettle'
+ENGINE_STRING = 'sqlite:////tmp/kettle.sqlite'
+#ENGINE_STRING = 'mysql://root@localhost/kettle'
 
 SECRET_KEY = None
 

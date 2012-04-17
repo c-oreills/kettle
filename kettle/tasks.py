@@ -262,37 +262,49 @@ class ParallelExecTask(ExecTask):
 
 
 class DelayTask(Task):
-    def _init(self, minutes, reversible=False):
+    def _init(self, minutes=0, seconds=0, reversible=False):
         self.state.update(
                 minutes=minutes,
+                seconds=seconds,
                 reversible=reversible)
 
     @classmethod
     def _run(cls, state, children, abort, term):
-        cls.wait(mins=state['minutes'], abort=abort, term=term)
+        cls.wait(cls.get_secs(state), abort=abort, term=term)
 
     @classmethod
     def _revert(cls, state, children, abort, term):
         if state['reversible']:
-            cls.wait(mins=state['minutes'], abort=abort, term=term)
+            cls.wait(cls.get_secs(state), abort=abort, term=term)
 
-    @staticmethod
-    def wait(mins, abort, term):
-        logbook.info('Waiting for %sm' % (mins,),)
-        sleep(mins*60)
+    @classmethod
+    def wait(cls, secs, abort, term):
+        logbook.info('Waiting for %s' % (cls.min_sec_str(secs),),)
+        for i in xrange(int(secs)):
+            if abort.is_set() or term.is_set():
+                break
+            sleep(1)
 
     def friendly_str(self):
         if self.run_start_dt and not self.run_return_dt:
             remaining_secs = self.state['minutes']*60 - (datetime.now() - self.run_start_dt).seconds
-            remaining_mins = remaining_secs / 60
-            remaining_secs = remaining_secs % 60
-            if remaining_mins:
-                remaining_str = ' (%d:%02d mins left)' % (remaining_mins, remaining_secs)
-            else:
-                remaining_str = ' (%d secs left)' % (remaining_secs,)
+            ' (%s left)' % self.min_sec_str(remaining_secs)
         else:
             remaining_str = ''
 
         rev_str = ' (reversible)' if self.state['reversible'] else ''
         return 'Delay for {minutes} mins{remaining_str}{rev_str}'.format(
                 remaining_str=remaining_str, rev_str=rev_str, **self.state)
+
+    @staticmethod
+    def min_sec_str(secs):
+        mins = secs / 60
+        secs = secs % 60
+        if mins:
+            return '%d:%02d mins' % (mins, secs)
+        else:
+            return '%d secs' % (secs,)
+
+    @staticmethod
+    def get_secs(state):
+        return (state.get('minutes', 0) * 60) + state.get('seconds', 0)

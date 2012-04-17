@@ -124,10 +124,10 @@ class TestDelayTask(KettleTestCase):
         self.rollout_id = self.rollout.id
 
     def test_abort_fast(self):
-        create_task(self.rollout, DelayTask, minutes=2)
-        #self.rollout.rollout_async()
-        #self.rollout = Rollout._from_id(self.rollout_id)
-        #self.rollout.abort('rollout')
-        #self.rollout = Rollout._from_id(self.rollout_id)
-        #import ipdb; ipdb.set_trace()
-        #self.assertTrue(self.rollout.rollout_finish_dt)
+        create_task(self.rollout, DelayTask, seconds=2)
+        #create_task(self.rollout)
+        self.rollout.rollout_async()
+        self.assertTrue(self.rollout.abort('rollout'))
+        self.assertTrue(self.rollout.signal('abort_rollout').is_set())
+        self.rollout = Rollout._from_id(self.rollout_id)
+        self.assertTrue(self.rollout.rollout_finish_dt)

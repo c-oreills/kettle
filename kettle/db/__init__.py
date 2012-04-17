@@ -1,3 +1,5 @@
+import contextlib
+
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -24,7 +26,6 @@ def make_session(bind=None):
         bind = engine
     session.Session = scoped_session(sessionmaker(bind=bind))
 
-
 def drop_all(engine_=None):
     metadata_task('drop_all', engine_)
 
@@ -37,3 +38,17 @@ def metadata_task(fn_name, engine_):
         engine_ = engine
     metadata_fn = getattr(Rollout.metadata, fn_name)
     metadata_fn(engine_)
+
+
+def truncate_all(engine_=None):
+    from kettle.rollout import Rollout
+    if engine_ is None:
+        engine_ = engine
+    with contextlib.closing(engine.connect()) as con:
+        trans = con.begin()
+        for table in reversed(Rollout.metadata.sorted_tables):
+            try:
+                con.execute(table.delete())
+            except:
+                pass
+        trans.commit()

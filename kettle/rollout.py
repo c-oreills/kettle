@@ -105,8 +105,9 @@ class Rollout(Base):
 
     def rollout_async(self):
         # remove stops error caused by having rollout in multiple sessions
+        rollout_id = self.id
         session.Session.remove()
-        rollout_thread = Thread(target=self.rollout)
+        rollout_thread = Thread(target=self._rollout, args=(rollout_id,))
         rollout_thread.start()
         return rollout_thread
 

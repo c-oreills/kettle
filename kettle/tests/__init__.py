@@ -2,13 +2,14 @@ from logbook import TestHandler
 from unittest import TestCase
 
 from kettle.tasks import Task
-from kettle.db import  make_session, drop_all, create_all, create_engine
+from kettle.db import  make_session, drop_all, create_all, create_engine, truncate_all, session
 from kettle.settings import ENGINE_STRING
 
 engine = create_engine('%s_test' % ENGINE_STRING)
 
 drop_all(engine)
 create_all(engine)
+make_session(engine)
 
 calls = []
 
@@ -27,14 +28,11 @@ class KettleTestCase(TestCase):
         self.log_handler = TestHandler()
         self.log_handler.push_thread()
 
-        # connect to the database
-        self.connection = engine.connect()
+        # Truncate all tables
+        truncate_all(engine)
 
-        # begin a non-ORM transaction
-        self.trans = self.connection.begin()
-
-        # bind thread-local Session to the connection
-        make_session(self.connection)
+        # Reset session
+        session.Session.remove()
 
     def __call__(self, result=None):
         """
@@ -61,11 +59,6 @@ class KettleTestCase(TestCase):
             return
 
     def _post_teardown(self):
-        # rollback - everything that happened with the Session above (including
-        # calls to commit()) is rolled back.
-        self.trans.rollback()
-        self.connection.close()
-
         # tear down logging
         self.log_handler.pop_thread()
 

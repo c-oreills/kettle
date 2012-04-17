@@ -63,6 +63,23 @@ class TestRollout(KettleTestCase):
         task2 = create_task(rollout)
         task3 = create_task(rollout)
         task4 = create_task(rollout)
+        root = create_task(rollout, exec_cls, [task1, task2, task3, task4])
+
+        rollout.rollout()
+
+        # Do not assert parents or root is run since otherwise we'd have to
+        # override their call methods
+        for task in task1, task2, task3, task4:
+            self.assertRun(task)
+            self.assertNotReverted(task)
+
+    def _test_exec_rollout_nested(self, exec_cls):
+        rollout = Rollout({})
+        rollout.save()
+        task1 = create_task(rollout)
+        task2 = create_task(rollout)
+        task3 = create_task(rollout)
+        task4 = create_task(rollout)
         parent1 = create_task(rollout, exec_cls, [task1, task2])
         parent2 = create_task(rollout, exec_cls, [task3, task4])
         root = create_task(rollout, exec_cls, [parent1, parent2])
@@ -80,6 +97,12 @@ class TestRollout(KettleTestCase):
 
     def test_parallel_exec_rollout(self):
         self._test_exec_rollout(ParallelExecTask)
+
+    def test_sequential_exec_rollout_nested(self):
+        self._test_exec_rollout_nested(SequentialExecTask)
+
+    def test_parallel_exec_rollout_nested(self):
+        self._test_exec_rollout_nested(ParallelExecTask)
 
     def test_sequential_quit_and_rollback_on_failure(self):
         class RecordedRollout(Rollout):
