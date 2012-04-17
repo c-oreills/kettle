@@ -58,7 +58,7 @@ def rollout_run(rollout_id):
 
 @app.route('/rollout/<int:rollout_id>/signal/<signal_name>')
 def rollout_signal(rollout_id, signal_name):
-    if rollout_cls.abort(rollout_id):
+    if rollout_cls._do_signal(rollout_id, signal_name):
         status = 'succeeded'
     else:
         status = 'failed'
