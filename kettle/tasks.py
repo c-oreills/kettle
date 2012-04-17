@@ -252,6 +252,8 @@ class ParallelExecTask(ExecTask):
     def exec_tasks(method_name, tasks, abort, term):
         threads = []
         for task in tasks:
+            if abort.is_set() or term.is_set():
+                break
             thread = getattr(task, method_name)(abort)
             threads.append(thread)
         for thread in threads:

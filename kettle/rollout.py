@@ -10,7 +10,7 @@ from db.fields import JSONEncodedDict
 from log_utils import log_filename
 from tasks import thread_wait
 
-ROLLOUT_SIGNALS = ('abort_rollout', 'term_rollout', 'monitoring')
+ROLLOUT_SIGNALS = ('abort_rollout', 'term_rollout', 'monitoring', 'skip_rollback')
 ROLLBACK_SIGNALS = ('abort_rollback', 'term_rollback')
 ALL_SIGNALS = ROLLOUT_SIGNALS + ROLLBACK_SIGNALS
 
@@ -65,7 +65,8 @@ class Rollout(Base):
                 abort_rollout = self.signal('abort_rollout')
                 task_thread = self.root_task.run_threaded(abort_rollout)
                 thread_wait(task_thread, abort_rollout)
-            if abort_rollout.is_set():
+            failed = self.is_aborting('rollout') or self.is_terming('rollout')
+            if failed and not self.is_skipping('rollback'):
                 self._update_rollout_finish_dt()
                 self.rollback()
         finally:
@@ -236,6 +237,15 @@ class Rollout(Base):
 
     def is_terming(self, action):
         return self._is_signalling(self.id, 'term_%s' % action)
+
+    def skip(self, action):
+        return self._do_signal(self.id, 'skip_%s' % action)
+
+    def can_skip(self, action):
+        return self._can_signal(self.id, 'skip_%s' % action)
+
+    def is_skipping(self, action):
+        return self._is_signalling(self.id, 'skip_%s' % action)
 
     @classmethod
     def _do_signal(cls, id, signal_name):
