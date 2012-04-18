@@ -57,8 +57,6 @@ class Rollout(Base):
         self.save()
         self._setup_signals_rollout()
 
-        self.root_task # Check root task exists before starting
-
         self.start_monitoring()
         try:
             with self.log_setup_rollout():
@@ -97,7 +95,7 @@ class Rollout(Base):
             raise Exception('Could not get root task: more than one task has no \
                     parents: %s' % (self.tasks.filter_by(parent=None).all()))
         except orm.exc.NoResultFound:
-            raise Exception('Could not get root task: no tasks have no parents')
+            return None
         else:
             return root_task
 

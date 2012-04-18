@@ -39,7 +39,10 @@ def rollout_edit(rollout_id):
             rollout = rollout_cls(form.data)
         else:
             rollout.config = form.data
-        rollout.generate_tasks()
+        try:
+            rollout.generate_tasks()
+        except Exception, e:
+            flash('Finalisation failed with the following error: %s' % e)
         rollout.save()
         if rollout_id == 'new':
             flash('Saved as Rollout %s' % (rollout.id,))
