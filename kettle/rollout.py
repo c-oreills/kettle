@@ -66,13 +66,14 @@ class Rollout(Base):
                 task_thread = self.root_task.run_threaded(abort_rollout)
                 thread_wait(task_thread, abort_rollout)
             failed = self.is_aborting('rollout') or self.is_terming('rollout')
-            if failed and not self.is_skipping('rollback'):
-                self._update_rollout_finish_dt()
-                self.rollback()
+            skipping = self.is_skipping('rollback')
+            should_rollback = failed and not skipping
         finally:
             self.stop_monitoring()
             self._update_rollout_finish_dt()
             self._teardown_signals_rollout()
+        if should_rollback:
+            self.rollback()
 
     def rollback(self):
         self.rollback_start_dt = datetime.now()
