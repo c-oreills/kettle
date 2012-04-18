@@ -73,36 +73,5 @@
     </p>
     <div id="tasks">
         {{ rollout.root_task.friendly_html()|safe }}
-        {#
-        {% for stage in rollout.stages %}
-        <div>
-            {{ stage['name'] }}
-            {% set current_stage = loop.index0 %}
-            <ul>
-                {% for step in stage['steps'] %}
-                {% set current_step = loop.index0 %}
-                {% if (rollout.current_stage, rollout.current_step) > (current_stage, current_step) %}
-                {% set step_class = "step_done" %}
-                {% elif (rollout.current_stage, rollout.current_step) == (current_stage, current_step) %}
-                    {% if rollout.rollback_start_dt %}
-                    {% set step_class = "step_error" %}
-                    {% elif rollout.rollout_finish_dt %}
-                    {% set step_class = "step_done" %}
-                    {% else %}
-                    {% set step_class = "step_now" %}
-                    {% endif %}
-                {% else %}
-                {% set step_class = "step_todo" %}
-                {% endif %}
-                <li class="{{ step_class }}">
-                {% if step_class in ("step_now", "step_done", "step_error") %}<a href="{{ url_for('log_view', rollout_id=rollout.id, args='%s/%s' % (current_stage, current_step)) }}">{% endif %}
-                    {{ friendly_step(step)|safe }}
-                {% if step_class in ("step_now", "step_done", "step_error") %}</a>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endfor %}
-        #}
     </div>
 {% endblock %}
