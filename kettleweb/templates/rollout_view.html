@@ -21,7 +21,7 @@
     {% if not (rollout.rollout_start_dt or rollout.rollback_start_dt) %}
     <a href="{{ url_for('rollout_edit', rollout_id=rollout.id) }}">Edit</a>
     {% endif %}
-    {% if rollout.status not in ('not_started', 'finished', 'rolled_back') %}
+    {% if rollout.status() not in ('not_started', 'finished', 'rolled_back') %}
         <p>
             {% for sig_url, sig_label in available_signals(rollout.id).iteritems() %}
                 <a href="{{ sig_url }}" class="signal">{{ sig_label }}</a>
