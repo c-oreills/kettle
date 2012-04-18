@@ -26,7 +26,7 @@ def load_settings(module_name='settings'):
 
 ROLLOUT_CLS = None
 
-ROLLOUT_FORM_CLS = None
+ROLLOUT_FORM_CLS = 'kettleweb.forms:RolloutForm'
 
 ENGINE_STRING = 'sqlite:////tmp/kettle.sqlite'
 #ENGINE_STRING = 'mysql://root@localhost/kettle'
