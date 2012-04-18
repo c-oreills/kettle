@@ -1,5 +1,6 @@
 from datetime import datetime
 from time import sleep
+from subprocess import STDOUT, Popen, PIPE
 import traceback
 
 import logbook
@@ -310,3 +311,31 @@ class DelayTask(Task):
     @staticmethod
     def get_secs(state):
         return (state.get('minutes', 0) * 60) + state.get('seconds', 0)
+
+
+def subprocess_run(command, abort, term, log=True, **kwargs):
+    if log:
+        logbook.info(command)
+    p = Popen(
+            args=command,
+            stdout=PIPE,
+            stderr=STDOUT,
+            **kwargs
+            )
+    outputs = []
+    for line in iter(p.stdout.readline, ''):
+        if term and term.is_set():
+            term = None # Don't spam calls to terminate
+            p.terminate()
+            logbook.info('Caught TERM signal: stopping')
+        line = line.strip()
+        outputs.append(line)
+        if log:
+            logbook.info(line)
+    returncode = p.wait()
+    if returncode == 0:
+        return outputs
+    else:
+        exc = Exception(command, outputs, returncode)
+        logbook.error(exc)
+        raise exc
