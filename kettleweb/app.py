@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from os import path
 
@@ -13,12 +14,12 @@ app.secret_key = settings.SECRET_KEY
 rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
 rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
 
-SIGNAL_LABELS = {sig: sig.replace('_', ' ').title() for sig in ALL_SIGNALS}
+SIGNAL_LABELS = OrderedDict((sig, sig.replace('_', ' ').title()) for sig in ALL_SIGNALS)
 
 def available_signals(rollout_id):
     url = lambda sig: url_for('rollout_signal', rollout_id=rollout_id, signal_name=sig)
-    return {url(sig): sig_label for sig, sig_label in SIGNAL_LABELS.iteritems()
-            if rollout_cls._can_signal(rollout_id, sig)}
+    return OrderedDict((url(sig), sig_label) for sig, sig_label in SIGNAL_LABELS.iteritems()
+            if rollout_cls._can_signal(rollout_id, sig))
 
 app.jinja_env.globals['available_signals'] = available_signals
 
