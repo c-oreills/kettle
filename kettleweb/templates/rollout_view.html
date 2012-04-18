@@ -67,11 +67,13 @@
         </li>
         {% endif %}
     </ul>
-    <h3>Tasks</h3>
-    <p style="display: none;">
-        {{ rollout.config }}
-    </p>
-    <div id="tasks">
-        {{ rollout.root_task.friendly_html()|safe }}
-    </div>
+    {% if rollout.root_task %}
+        <h3>Tasks</h3>
+        <p style="display: none;">
+            {{ rollout.config }}
+        </p>
+        <div id="tasks">
+            {{ rollout.root_task.friendly_html()|safe }}
+        </div>
+    {% endif %}
 {% endblock %}
