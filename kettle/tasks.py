@@ -338,4 +338,3 @@ def subprocess_run(command, abort, term, log=True, **kwargs):
     else:
         exc = Exception(command, outputs, returncode)
         logbook.error(exc)
-        raise exc
