@@ -4,6 +4,10 @@ from os import path
 
 from flask import flash, Flask, request, render_template, redirect, Response, url_for
 
+from logbook import FileHandler
+from logbook.compat import redirect_logging
+redirect_logging()
+
 from kettle import settings
 from kettle.db import session, make_session
 from kettle.log_utils import log_filename
@@ -115,7 +119,8 @@ def get_rollout(rollout_id):
 def run_app():
     make_session()
     app.debug = settings.FLASK_DEBUG
-    app.run()
+    with FileHandler(log_filename('flask')):
+        app.run()
 
 if __name__ == '__main__':
     run_app()

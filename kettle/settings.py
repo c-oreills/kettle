@@ -35,6 +35,6 @@ SECRET_KEY = None
 
 FLASK_BIND = '0.0.0.0:5000'
 
-FLASK_DEBUG = True
+FLASK_DEBUG = False
 
 LOG_DIR = '/var/log/kettle'
