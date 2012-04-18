@@ -36,7 +36,7 @@ body {
 }
 
 #header {
-    padding: 10px 10px 20px 10px;
+    padding-top: 10px;
     border: 1px solid #444;
     background-color: #fff;
 }
