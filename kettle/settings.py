@@ -5,7 +5,7 @@ sys.path.append(os.getcwd())
 
 def get_cls(cls_name):
     module, cls = cls_name.split(':')
-    module = __import__(module)
+    module = __import__(module, fromlist=[''])
     return getattr(module, cls)
 
 def load_settings(module_name='settings'):
