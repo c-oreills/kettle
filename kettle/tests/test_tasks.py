@@ -122,6 +122,7 @@ class TestTasks(KettleTestCase):
 class TestSignals(KettleTestCase):
     def test_signals(self):
         rollouts = defaultdict(dict)
+        rollout_ids = defaultdict(dict)
         tasks = defaultdict(dict)
         classes = DelayTask, SequentialExecTask, ParallelExecTask
         signals = ('abort_rollout',), ('term_rollout',), ('skip_rollback', 'term_rollout')
@@ -130,6 +131,7 @@ class TestSignals(KettleTestCase):
                 rollout = Rollout({})
                 rollout.save()
                 rollouts[cls][sigs] = rollout
+                rollout_ids[cls][sigs] = rollout.id
 
                 if cls is DelayTask:
                     task = create_task(rollout, DelayTask, seconds=15)
@@ -141,39 +143,39 @@ class TestSignals(KettleTestCase):
 
         for cls in classes:
             for sigs in signals:
-                rollouts[cls][sigs].rollout_async()
+                rollout = rollouts[cls][sigs]
+                rollout.rollout_async()
 
         # Enough time for rollouts to start
         time.sleep(0.5)
 
         for cls in classes:
             for sigs in signals:
-                rollout = rollouts[cls][sigs]
-                id = rollout.id
+                id = rollout_ids[cls][sigs]
                 for sig in sigs:
-                    self.assertTrue(rollout._can_signal(id, sig))
-                    self.assertTrue(rollout._do_signal(id, sig))
-                    self.assertTrue(rollout._is_signalling(id, sig))
+                    self.assertTrue(Rollout._can_signal(id, sig))
+                    self.assertTrue(Rollout._do_signal(id, sig))
+                    self.assertTrue(Rollout._is_signalling(id, sig))
 
         # Enough time for rollouts to finish and save to db
         time.sleep(2)
 
         for cls in classes:
             for sigs in signals:
-                rollout = rollouts[cls][sigs]
-                rollout = Rollout._from_id(rollout.id)
+                rollout_id = rollout_ids[cls][sigs]
+                rollout = Rollout._from_id(rollout_id)
+                print rollout, cls, sigs
+                self.assertTrue(rollout.rollout_finish_dt, 'Rollout for %s not finished when sent %s' % (cls, sigs))
                 task = tasks[cls][sigs]
                 task = Task._from_id(task.id)
-                self.assertTrue(rollout.rollout_finish_dt)
-
                 # Sequential exec's last task should not have run due to aborts
                 if cls is SequentialExecTask:
-                    self.assertFalse(task.run_start_dt)
+                    self.assertFalse(task.run_start_dt, 'Final task %s run for %s rollout when sent %s' % (task, cls, sigs))
                 else:
-                    self.assertTrue(task.run_start_dt)
+                    self.assertTrue(task.run_start_dt, 'Final task %s not run for %s rollout when sent %s' % (task, cls, sigs))
 
                 # If rollbacks were skipped the root task should not have reverted
                 if 'skip_rollback' in sigs:
-                    self.assertFalse(rollout.root_task.revert_start_dt)
+                    self.assertFalse(rollout.root_task.revert_start_dt, 'Rollout for %s rolled back when sent %s' % (cls, sigs))
                 else:
-                    self.assertTrue(rollout.root_task.revert_start_dt)
+                    self.assertTrue(rollout.root_task.revert_start_dt, 'Rollout for %s not rolled back when sent %s' % (cls, sigs))
