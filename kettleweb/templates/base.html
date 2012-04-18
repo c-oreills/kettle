@@ -13,17 +13,17 @@
                 <h2 style="display: inline;">Kettle</h2>
             </div>
         </a>
-        <div id="flash">
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-            <ul class=flashes>
-                {% for message in messages %}
-                <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {% endwith %}
-        </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div id="flash">
+                <ul class=flashes>
+                    {% for message in messages %}
+                    <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% endwith %}
         <div id="content">
             {% block content %}
             {% endblock %}
