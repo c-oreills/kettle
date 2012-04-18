@@ -164,7 +164,6 @@ class TestSignals(KettleTestCase):
             for sigs in signals:
                 rollout_id = rollout_ids[cls][sigs]
                 rollout = Rollout._from_id(rollout_id)
-                print rollout, cls, sigs
                 self.assertTrue(rollout.rollout_finish_dt, 'Rollout for %s not finished when sent %s' % (cls, sigs))
                 task = tasks[cls][sigs]
                 task = Task._from_id(task.id)
