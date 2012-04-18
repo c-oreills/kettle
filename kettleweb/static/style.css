@@ -28,29 +28,27 @@ body {
     color: #ff0000;
 }
 
-#header, #content, #footer {
+#header, #content, #footer, #flash {
     width: 800px;
     margin-right: auto;
     margin-left: auto;
+    padding: 25px;
 }
 
 #header {
     padding: 10px 10px 20px 10px;
     border: 1px solid #444;
     background-color: #fff;
-    padding: 25px;
 }
 
 #content {
     border: 1px solid #444;
     border-top: none;
     background-color: #eef;
-    padding: 25px;
     padding-top: 1px;
 }
 
 #footer {
-    padding: 25px;
     padding-top: 1px;
     font-size: 10px;
     text-align: center;
@@ -65,15 +63,14 @@ li {
 }
 
 #flash {
-    width: 800px;
-    margin-right: auto;
-    margin-left: auto;
+    background-color: #ccf;
 }
 
 .signal {
     color: #ff0000;
-    font-size: x-large;
+    font-size: large;
     font-weight: bold;
+    padding: 0 5px;
 }
 
 .new-rollout-button {
