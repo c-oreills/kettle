@@ -15,7 +15,9 @@ Kettle revolves around two concepts:
 
 #### Configuration
 
-Create a file called rollout.py that contains the following:
+Create a directory called my_kettle.
+
+Create a file called rollout.py in my_kettle that contains the following:
 
 ```python
 from kettle.rollout import Rollout
@@ -41,9 +43,25 @@ SECRET_KEY = '<insert a randomly generated string for use as the Flask secret ke
 FLASK_DEBUG = True
 ```
 
+#### Database
+
+Run the following from your my_kettle dir:
+
+```python -c 'from kettle.settings import load_settings; load_settings(); from kettle import db; db.create_all()'```
+
+This should create a file called kettle.sqlite in your my_kettle dir. The sqlite db will contain two tables, rollout and tasks.
+
 #### Kettleweb
 
-In the directory you saved your configuration files in, run
+From your my_kettle dir, run
 ```kettleweb```
 
 Point your browser at http://localhost:5000
+
+From this web interface you can create, run and monitor rollouts.
+
+Click on new and you will be taken to a form for your rollout. Since we didn't specify any configuration options, the form will be empty. Click finalise.
+
+You should now see a Rollout with a single task, Delay for 15 seconds. Click on run.
+
+The rollout will start and you will see a countdown as the delay ticks away.
