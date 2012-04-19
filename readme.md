@@ -43,6 +43,15 @@ SECRET_KEY = '<insert a randomly generated string for use as the Flask secret ke
 FLASK_DEBUG = True
 ```
 
+In order to generate a secret key, using the following method in an interactive Python session is suggested:
+
+```python
+>>> import os
+>>> os.urandom(24)
+```
+
+Copy and paste the result into your settings.py SECRET_KEY variable.
+
 #### Database
 
 Run the following from your my_kettle dir:
@@ -60,8 +69,8 @@ Point your browser at http://localhost:5000
 
 From this web interface you can create, run and monitor rollouts.
 
-Click on new and you will be taken to a form for your rollout. Since we didn't specify any configuration options, the form will be empty. Click finalise.
+Click on new and you will be taken to a form for your rollout. Since we didn't specify any configuration options, the form will be empty. Click Finalise.
 
-You should now see a Rollout with a single task, Delay for 15 seconds. Click on run.
+You should now see a Rollout with a single task, Delay for 15 seconds. Click on Run.
 
 The rollout will start and you will see a countdown as the delay ticks away.
