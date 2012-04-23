@@ -338,5 +338,7 @@ def subprocess_run(command, abort, term, log=True, **kwargs):
     if returncode == 0:
         return outputs
     else:
+        if abort:
+            abort.set()
         exc = Exception(command, outputs, returncode)
         logbook.error(exc)
