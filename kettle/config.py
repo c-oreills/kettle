@@ -1,8 +1,6 @@
-import random
-
 from tasks import ParallelExecTask, SequentialExecTask
 
-def pick_randomly(num, unprocessed, processed=None):
+def num_to_pick(num, unprocessed, processed=None):
     if processed is None:
         len_processed = 0
     else:
@@ -16,16 +14,16 @@ def pick_randomly(num, unprocessed, processed=None):
     if num in text_nums:
         num = text_nums[num]
     num_to_pick = max(0, num - len_processed)
-    return random.sample(unprocessed, num_to_pick)
+    return num_to_pick
 
-def make_random_picker(items):
-    unpicked_items = list(items)
-    picked_items = list()
+def make_picker(items):
+    items_unpicked = list(items)
+    items_picked = list()
     def picker(num):
-        picks = pick_randomly(num, unpicked_items, picked_items)
-        for pick in picks:
-            unpicked_items.remove(pick)
-            picked_items.append(pick)
+        num_picks = num_to_pick(num, items_unpicked, items_picked)
+        picks = items_unpicked[:num_picks]
+        items_picked.extend(picks)
+        del items_unpicked[:num_picks]
         return picks
     return picker
 
@@ -38,7 +36,7 @@ def gradual_exec_parallel(rollout_id, task_cls, delay_gen, args_kwargs_list):
             rollout_id, task_cls, delay_gen, args_kwargs_list, ParallelExecTask)
 
 def gradual_exec_generic(rollout_id, task_cls, delay_gen, args_kwargs_list, run_task_cls):
-    picker = make_random_picker(args_kwargs_list)
+    picker = make_picker(args_kwargs_list)
     def make_steps_fn(num):
         tasks = [task_cls(*args, **kwargs)
                 for (args, kwargs) in picker(num)]
