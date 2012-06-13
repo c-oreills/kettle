@@ -47,6 +47,8 @@ def rollout_edit(rollout_id):
             rollout.generate_tasks()
         except Exception, e:
             flash('Finalisation failed with the following error: %s' % e)
+            if app.debug:
+                raise
         rollout.save()
         if rollout_id == 'new':
             flash('Saved as Rollout %s' % (rollout.id,))
