@@ -23,8 +23,8 @@
     {% endif %}
     {% if rollout.status() not in ('not_started', 'finished', 'rolled_back') %}
         <p>
-            {% for sig_url, sig_label in available_signals(rollout.id).iteritems() %}
-                <a href="{{ sig_url }}" class="signal">{{ sig_label }}</a>
+            {% for sig_url, sig_label, sig_descr in available_signals(rollout.id).iteritems() %}
+                <a href="{{ sig_url }}" class="signal" title="{{ sig_descr }}">{{ sig_label }}</a>
             {% else %}
                 No signals available
             {% endfor %}

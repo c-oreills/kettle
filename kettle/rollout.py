@@ -13,6 +13,20 @@ from tasks import thread_wait
 ROLLOUT_SIGNALS = ('abort_rollout', 'term_rollout', 'monitoring', 'skip_rollback')
 ROLLBACK_SIGNALS = ('abort_rollback', 'term_rollback')
 ALL_SIGNALS = ROLLOUT_SIGNALS + ROLLBACK_SIGNALS
+SIGNAL_DESCRIPTIONS = {
+    'abort_rollout': 'Performs a graceful stop of the rollout. Will wait for '
+                     'the current task to finish before rolling back.',
+    'term_rollout': 'Performs an immediate stop on the rollout. Think of it '
+                    'like kill -9.',
+    'monitoring': '',
+    'skip_rollback': 'Sets a flag such that you can abort the rollout and a '
+                     'rollback will not take place. This is helpful if you '
+                     'want to deploy to certain servers but not others.',
+    'abort_rollback': 'Performs a graceful stop on the rollback. Will wait for '
+                      'the current task to finish before quitting.',
+    'term_rollback': 'Performs an immediate stop on the rollback. Think of it '
+                     'like kill -9.',
+}
 
 class Rollout(Base):
     __tablename__ = 'rollout'
