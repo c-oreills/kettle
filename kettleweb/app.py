@@ -21,9 +21,18 @@ rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
 SIGNAL_LABELS = OrderedDict((sig, sig.replace('_', ' ').title()) for sig in ALL_SIGNALS)
 
 def available_signals(rollout_id):
-    url = lambda sig: url_for('rollout_signal', rollout_id=rollout_id, signal_name=sig)
-    return ((url(sig), sig_label, SIGNAL_DESCRIPTIONS.get(sig, '')) for sig, sig_label in SIGNAL_LABELS.iteritems()
-            if rollout_cls._can_signal(rollout_id, sig))
+    result = []
+
+    for sig, sig_label in SIGNAL_LABELS.iteritems():
+        if not rollout_cls._can_signal(rollout_id, sig):
+            continue
+
+        result.append(tuple(
+            url_for('rollout_signal', rollout_id=rollout_id, signal_name=sig),
+            sig_label,
+            SIGNAL_DESCRIPTIONS.get(sig, '')))
+
+    return tuple(result)
 
 app.jinja_env.globals['available_signals'] = available_signals
 
