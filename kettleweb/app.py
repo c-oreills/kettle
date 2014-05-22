@@ -11,7 +11,7 @@ redirect_logging()
 from kettle import settings
 from kettle.db import session, make_session
 from kettle.log_utils import log_filename
-from kettle.rollout import ALL_SIGNALS
+from kettle.rollout import ALL_SIGNALS, SIGNAL_DESCRIPTIONS
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
@@ -22,7 +22,7 @@ SIGNAL_LABELS = OrderedDict((sig, sig.replace('_', ' ').title()) for sig in ALL_
 
 def available_signals(rollout_id):
     url = lambda sig: url_for('rollout_signal', rollout_id=rollout_id, signal_name=sig)
-    return OrderedDict((url(sig), sig_label) for sig, sig_label in SIGNAL_LABELS.iteritems()
+    return OrderedDict((url(sig), sig_label, SIGNAL_DESCRIPTIONS.get(sig, '')) for sig, sig_label in SIGNAL_LABELS.iteritems()
             if rollout_cls._can_signal(rollout_id, sig))
 
 app.jinja_env.globals['available_signals'] = available_signals
