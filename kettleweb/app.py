@@ -13,7 +13,11 @@ from kettle.db import session, make_session
 from kettle.log_utils import log_filename
 from kettle.rollout import ALL_SIGNALS, SIGNAL_DESCRIPTIONS
 
+from kettleweb.proxy import ReverseProxied
+
+
 app = Flask(__name__)
+app.wsgi_app = ReverseProxied(app.wsgi_app)
 app.secret_key = settings.SECRET_KEY
 rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
 rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
@@ -131,7 +135,7 @@ def run_app():
     make_session()
     app.debug = settings.FLASK_DEBUG
     with FileHandler(log_filename('flask')):
-        app.run()
+        app.run(host=settings.APP_HOST, port=settings.APP_PORT)
 
 if __name__ == '__main__':
     run_app()
