@@ -33,7 +33,9 @@ ENGINE_STRING = 'sqlite:////tmp/kettle.sqlite'
 
 SECRET_KEY = None
 
-FLASK_BIND = '0.0.0.0:5000'
+APP_HOST = '0.0.0.0'
+
+APP_PORT = 5000
 
 FLASK_DEBUG = False
 

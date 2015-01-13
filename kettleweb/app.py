@@ -135,7 +135,7 @@ def run_app():
     make_session()
     app.debug = settings.FLASK_DEBUG
     with FileHandler(log_filename('flask')):
-        app.run()
+        app.run(host=settings.APP_HOST, port=settings.APP_PORT)
 
 if __name__ == '__main__':
     run_app()
