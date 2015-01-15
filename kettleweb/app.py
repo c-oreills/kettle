@@ -31,10 +31,10 @@ def available_signals(rollout_id):
         if not rollout_cls._can_signal(rollout_id, sig):
             continue
 
-        result.append(tuple(
+        result.append(tuple([
             url_for('rollout_signal', rollout_id=rollout_id, signal_name=sig),
             sig_label,
-            SIGNAL_DESCRIPTIONS.get(sig, '')))
+            SIGNAL_DESCRIPTIONS.get(sig, '')]))
 
     return tuple(result)
 
