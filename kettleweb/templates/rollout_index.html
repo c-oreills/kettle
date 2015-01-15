@@ -11,7 +11,7 @@
             {{ rollout.friendly_status_html()|safe }}
         </td>
         <td>
-            deployed by {% if latest.user %}{{ latest.user }}{% else %}someone{% endif %}
+            deployed by {% if rollout.user %}{{ rollout.user }}{% else %}someone{% endif %}
         </td>
     </tr>
     {% endfor %}
