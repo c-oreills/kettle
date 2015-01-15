@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 from threading import Event, Thread
 
-from sqlalchemy import Column, DateTime, Integer, PickleType, Boolean, orm
+from sqlalchemy import Column, DateTime, Integer, PickleType, Boolean, String, orm
 from logbook import FileHandler, NestedSetup, NullHandler
 
 from db import Base, session
@@ -31,6 +31,7 @@ SIGNAL_DESCRIPTIONS = {
 class Rollout(Base):
     __tablename__ = 'rollout'
     id = Column(Integer, primary_key=True)
+    user = Column(String(255))
     config = Column(JSONEncodedDict(1000))
     stages = Column(PickleType)
 
@@ -43,7 +44,7 @@ class Rollout(Base):
 
     rollback_start_dt = Column(DateTime)
     rollback_finish_dt = Column(DateTime)
-    
+
     monitors = {}
     signals = defaultdict(dict)
 
@@ -64,7 +65,7 @@ class Rollout(Base):
             raise Exception('No root task to rollout')
 
         if self.rollout_start_dt:
-            raise Exception('Rollout already started at %s' % 
+            raise Exception('Rollout already started at %s' %
                     (self.rollout_start_dt))
 
         self.rollout_start_dt = datetime.now()
@@ -124,11 +125,11 @@ class Rollout(Base):
     def start_monitoring(self):
         monitoring = self.signal('monitoring')
         if monitoring.is_set():
-            return 
+            return
 
         monitoring.set()
 
-        monitors = [v for k, v in self.monitors.iteritems() 
+        monitors = [v for k, v in self.monitors.iteritems()
                 if k in self.config.get('monitors', [])]
         for monitor in monitors:
             thread = Thread(

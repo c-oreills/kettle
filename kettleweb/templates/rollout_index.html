@@ -10,6 +10,9 @@
         <td>
             {{ rollout.friendly_status_html()|safe }}
         </td>
+        <td>
+            deployed by {% if latest.user %}{{ latest.user }}{% else %}someone{% endif %}
+        </td>
     </tr>
     {% endfor %}
 </table>
