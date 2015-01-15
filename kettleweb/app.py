@@ -13,11 +13,11 @@ from kettle.db import session, make_session
 from kettle.log_utils import log_filename
 from kettle.rollout import ALL_SIGNALS, SIGNAL_DESCRIPTIONS
 
-from kettleweb.proxy import ReverseProxied
+from kettleweb.middleware import ReverseProxied, RemoteUserMiddleware
 
 
 app = Flask(__name__)
-app.wsgi_app = ReverseProxied(app.wsgi_app)
+app.wsgi_app = ReverseProxied(RemoteUserMiddleware(app.wsgi_app))
 app.secret_key = settings.SECRET_KEY
 rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
 rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
@@ -56,6 +56,8 @@ def rollout_edit(rollout_id):
             rollout = rollout_cls(form.data)
         else:
             rollout.config = form.data
+
+        rollout.user = request.environ.get('REMOTE_USER')
         try:
             rollout.generate_tasks()
         except Exception, e:
@@ -136,6 +138,7 @@ def run_app():
     app.debug = settings.FLASK_DEBUG
     with FileHandler(log_filename('flask')):
         app.run(host=settings.APP_HOST, port=settings.APP_PORT)
+
 
 if __name__ == '__main__':
     run_app()
