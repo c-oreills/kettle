@@ -7,7 +7,7 @@
     {% endblock %}
     </head>
     <body>
-        <a href="/" style="text-decoration: none; color: #3399ff">
+        <a href="{{ url_for('index') }}" style="text-decoration: none; color: #3399ff">
             <div id="header">
                 <img src="{{ url_for('static', filename='kettle.gif') }}" width="65px" height="46px" />
                 <h2 style="display: inline;">Kettle</h2>
