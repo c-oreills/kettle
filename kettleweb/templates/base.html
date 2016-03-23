@@ -3,7 +3,9 @@
     <head>
     <title>{% block title %}Kettle{% endblock %}</title>
     {% block head %}
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
         <link rel="stylesheet" type="text/css" href ="{{ url_for('static', filename='style.css') }}" media="screen" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.js"></script>
     {% endblock %}
     </head>
     <body>

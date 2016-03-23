@@ -29,7 +29,7 @@ body {
 }
 
 #header, #content, #footer, #flash {
-    width: 800px;
+    width: 1250px;
     margin-right: auto;
     margin-left: auto;
     padding: 25px;
@@ -55,6 +55,20 @@ body {
     border-top: none;
     background-color: #eef;
     padding-top: 1px;
+    width: 1275px;
+    padding-right: 0;
+    overflow: auto;
+}
+
+#content-inner {
+    width: 570px;
+    float: left;
+}
+
+#checklist {
+    float: right;
+    width: 650px;
+    padding-left: 50px;
 }
 
 #footer {

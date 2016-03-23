@@ -36,11 +36,17 @@ Put the following variable definitions into it:
 ```python
 ROLLOUT_CLS = 'rollout:MyRollout'
 
+ROLLOUT_REFRESH_TIMEOUT = 1000
+
 ENGINE_STRING = 'sqlite:///kettle.sqlite'
 
 SECRET_KEY = '<insert a randomly generated string for use as the Flask secret key>'
 
 FLASK_DEBUG = True
+
+CHECKLIST_URL = None
+
+CHECKLIST_HEIGHT = None
 ```
 
 In order to generate a secret key, using the following method in an interactive Python session is suggested:

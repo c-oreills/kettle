@@ -19,6 +19,9 @@ from kettleweb.middleware import ReverseProxied, RemoteUserMiddleware
 app = Flask(__name__)
 app.wsgi_app = ReverseProxied(RemoteUserMiddleware(app.wsgi_app))
 app.secret_key = settings.SECRET_KEY
+app.config['ROLLOUT_REFRESH_TIMEOUT'] = getattr(settings, 'ROLLOUT_REFRESH_TIMEOUT', 1000)
+app.config['CHECKLIST_URL'] = getattr(settings, 'CHECKLIST_URL', None)
+app.config['CHECKLIST_HEIGHT'] = getattr(settings, 'CHECKLIST_HEIGHT', None)
 rollout_cls = settings.get_cls(settings.ROLLOUT_CLS)
 rollout_form_cls = settings.get_cls(settings.ROLLOUT_FORM_CLS)
 
