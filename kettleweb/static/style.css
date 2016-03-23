@@ -36,9 +36,18 @@ body {
 }
 
 #header {
-    padding-top: 10px;
+    padding: 10px 25px 0;
     border: 1px solid #444;
     background-color: #fff;
+}
+
+#logo {
+  position: relative;
+  top: 6px;
+  left: -12px;
+  float: left;
+  width: 65px;
+  height: 46px;
 }
 
 #content {
