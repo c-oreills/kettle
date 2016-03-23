@@ -29,16 +29,25 @@ body {
 }
 
 #header, #content, #footer, #flash {
-    width: 800px;
+    width: 1250px;
     margin-right: auto;
     margin-left: auto;
     padding: 25px;
 }
 
 #header {
-    padding-top: 10px;
+    padding: 10px 25px 0;
     border: 1px solid #444;
     background-color: #fff;
+}
+
+#logo {
+  position: relative;
+  top: 6px;
+  left: -12px;
+  float: left;
+  width: 65px;
+  height: 46px;
 }
 
 #content {
@@ -46,6 +55,20 @@ body {
     border-top: none;
     background-color: #eef;
     padding-top: 1px;
+    width: 1275px;
+    padding-right: 0;
+    overflow: auto;
+}
+
+#content-inner {
+    width: 570px;
+    float: left;
+}
+
+#checklist {
+    float: right;
+    width: 650px;
+    padding-left: 50px;
 }
 
 #footer {

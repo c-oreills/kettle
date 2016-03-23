@@ -3,21 +3,46 @@
 {% block head %}
 {{ super() }}
 {% if rollout.rollout_start_dt and not (rollout.rollout_finish_dt or rollout.rollback_start_dt) %}
-<script type="text/JavaScript">
-    window.auto_refresh = true;
-    function auto_refresh_fn(){
-        if (window.auto_refresh == true){
-            location.reload(true);
-        }
-    };
-    setTimeout("auto_refresh_fn()", 1000);
+<script type="text/javascript">
+    var refreshInterval;
 
+    function clearRefresh(){
+      clearInterval(refreshInterval);
+      return false;
+    }
+
+    function refreshContentInner() {
+        $.get(
+            window.location.toString(),
+            function (data, textStatus, jqXHR) {
+                $("#content-inner").replaceWith($("#content-inner", data));
+                $("#rollout-title i.fa").show();
+                if ($(".status").is(".finished, .not_started, .rolled_back")){
+                  $("#rollout-title i.fa").hide();
+                  clearRefresh();
+                }
+            })
+    }
+
+    $(function () {
+        refreshInterval = setInterval(refreshContentInner, {{ config['ROLLOUT_REFRESH_TIMEOUT'] }});
+    });
 </script>
 {% endif %}
 {% endblock %}
 
 {% block content %}
-    <h2>Rollout {{ rollout.id }}</h2>
+    {% if config['CHECKLIST_URL'] %}
+    <div id="checklist"{% if config['CHECKLIST_HEIGHT'] %} style="height: {{ config['CHECKLIST_HEIGHT'] }}px"{% endif %}>
+      <iframe src="{{ config['CHECKLIST_URL'] }}{{ rollout.id }}"
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              seamless="seamless"></iframe>
+    </div>
+    {% endif %}
+    <h2 id="rollout-title"><i style="display: none" class="fa fa-spinner fa-spin"></i> Rollout {{ rollout.id }}</h2>
+    <div id="content-inner">
     {% if not (rollout.rollout_start_dt or rollout.rollback_start_dt) %}
     <a href="{{ url_for('rollout_edit', rollout_id=rollout.id) }}">Edit</a>
     {% endif %}
@@ -29,7 +54,7 @@
                 No signals available
             {% endfor %}
         </p>
-    <p><a href="" onclick="window.auto_refresh=false; return false;">Stop Autorefresh</a></p>
+    <p><a href="#" onclick="clearRefresh();">Stop Autorefresh</a></p>
     {% endif %}
     <h3>Info</h3>
     {% if rollout.info_list %}
@@ -76,4 +101,5 @@
             {{ rollout.root_task.friendly_html()|safe }}
         </div>
     {% endif %}
+    </div>
 {% endblock %}

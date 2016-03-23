@@ -3,14 +3,16 @@
     <head>
     <title>{% block title %}Kettle{% endblock %}</title>
     {% block head %}
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
         <link rel="stylesheet" type="text/css" href ="{{ url_for('static', filename='style.css') }}" media="screen" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.js"></script>
     {% endblock %}
     </head>
     <body>
         <a href="{{ url_for('index') }}" style="text-decoration: none; color: #3399ff">
             <div id="header">
-                <img src="{{ url_for('static', filename='kettle.gif') }}" width="65px" height="46px" />
-                <h2 style="display: inline;">Kettle</h2>
+                <img id="logo" src="{{ url_for('static', filename='kettle.gif') }}"/>
+                <h2>Kettle</h2>
             </div>
         </a>
         {% with messages = get_flashed_messages() %}
