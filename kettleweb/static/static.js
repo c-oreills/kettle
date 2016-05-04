@@ -7,6 +7,10 @@ $(document).ready(function () {
                     popCommit();
                 });
 
+                $('form[method=POST]').submit( function () {
+                   $("#commit").prop("disabled",false);
+                });
+
                 // populate the short ref in commit box and disable editing
                 // when doing static deploys, don't disable for prelive deploys
                 function popCommit() {
