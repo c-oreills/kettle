@@ -27,6 +27,16 @@
     $(function () {
         refreshInterval = setInterval(refreshContentInner, {{ config['ROLLOUT_REFRESH_TIMEOUT'] }});
     });
+
+    function renderEngineeringChecklistIframe() {
+        $("#checklist").replace(
+            '<iframe src="{{ config['CHECKLIST_URL'] }}{{ rollout.id }}"'
+                   + 'width="100%"'
+                   + 'height="100%"'
+                   + 'frameBorder="0"'
+                   + 'seamless="seamless"></iframe>'
+        );
+    }
 </script>
 {% endif %}
 {% endblock %}
@@ -34,11 +44,10 @@
 {% block content %}
     {% if config['CHECKLIST_URL'] %}
     <div id="checklist"{% if config['CHECKLIST_HEIGHT'] %} style="height: {{ config['CHECKLIST_HEIGHT'] }}px"{% endif %}>
-      <iframe src="{{ config['CHECKLIST_URL'] }}{{ rollout.id }}"
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              seamless="seamless"></iframe>
+      <img src="data:image/png;base64,{{ config['CHECKLIST_CLICKTHROUGH_IMAGE_BASE64'] }}"
+           width="100%"
+           height="100%"
+           onclick="renderEngineeringChecklistIframe()">
     </div>
     {% endif %}
     <h2 id="rollout-title"><i style="display: none" class="fa fa-spinner fa-spin"></i> Rollout {{ rollout.id }}</h2>
