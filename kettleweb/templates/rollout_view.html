@@ -27,7 +27,9 @@
     $(function () {
         refreshInterval = setInterval(refreshContentInner, {{ config['ROLLOUT_REFRESH_TIMEOUT'] }});
     });
-
+</script>
+{% endif %}
+<script type="text/javascript">
     function renderEngineeringChecklistIframe() {
         $("#checklist").replace(
             '<iframe src="{{ config['CHECKLIST_URL'] }}{{ rollout.id }}"'
@@ -38,7 +40,6 @@
         );
     }
 </script>
-{% endif %}
 {% endblock %}
 
 {% block content %}
