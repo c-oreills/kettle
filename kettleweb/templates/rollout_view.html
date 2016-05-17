@@ -31,7 +31,7 @@
 {% endif %}
 <script type="text/javascript">
     function renderEngineeringChecklistIframe() {
-        $("#checklist").replaceWith(
+        $("#checklist img").replaceWith(
             '<iframe src="{{ config['CHECKLIST_URL'] }}{{ rollout.id }}"'
                    + 'width="100%"'
                    + 'height="100%"'
@@ -47,7 +47,6 @@
     <div id="checklist"{% if config['CHECKLIST_HEIGHT'] %} style="height: {{ config['CHECKLIST_HEIGHT'] }}px"{% endif %}>
       <img src="data:image/png;base64,{{ config['CHECKLIST_CLICKTHROUGH_IMAGE_BASE64'] }}"
            width="100%"
-           height="100%"
            onclick="renderEngineeringChecklistIframe()">
     </div>
     {% endif %}
