@@ -31,7 +31,7 @@
 {% endif %}
 <script type="text/javascript">
     function renderEngineeringChecklistIframe() {
-        $("#checklist").replace(
+        $("#checklist").replaceWith(
             '<iframe src="{{ config['CHECKLIST_URL'] }}{{ rollout.id }}"'
                    + 'width="100%"'
                    + 'height="100%"'
