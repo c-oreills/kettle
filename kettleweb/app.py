@@ -1,3 +1,4 @@
+import traceback
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from os import path
@@ -65,7 +66,10 @@ def rollout_edit(rollout_id):
         try:
             rollout.generate_tasks()
         except Exception, e:
-            flash('Finalisation failed with the following error: %s' % e)
+            trace = traceback.format_exc()
+            flash(
+                'Finalisation failed with the following error: %s %s' % (
+                    e, trace))
             if app.debug:
                 raise
         rollout.save()
